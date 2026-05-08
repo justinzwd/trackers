@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喝水记录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .date-display {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        /* 圆环进度 */
+        .progress-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .progress-ring {
+            width: 200px;
+            height: 200px;
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .progress-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .progress-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .progress-unit {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-goal {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* 按钮 */
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .btn-100 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-550 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* 输入框 */
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .input-section input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-section input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-section button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .input-section button:hover {
+            background: #5568d3;
+        }
+
+        /* 状态提示 */
+        .status-indicator {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+
+        .status-indicator.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-indicator.disconnected {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .select-file-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: background 0.3s ease;
+        }
+
+        .select-file-btn:hover {
+            background: #5568d3;
+        }
+        .records-section {
+            margin-bottom: 25px;
+        }
+
+        .records-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .records-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .record-item:last-child {
+            border-bottom: none;
+        }
+
+        .record-time {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .record-amount {
+            font-weight: bold;
+            color: #4facfe;
+        }
+
+        .delete-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #ee5a5a;
+        }
+
+        /* 图表 */
+        .chart-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 200px;
+        }
+
+        .empty-records {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💧 喝水记录</h1>
+        <div class="date-display" id="dateDisplay"></div>
+
+        <!-- 圆环进度 -->
+        <div class="progress-container">
+            <svg class="progress-ring">
+                <circle
+                    class="progress-ring__circle-bg"
+                    stroke="#e0e0e0"
+                    stroke-width="12"
+                    fill="transparent"
+                    r="80"
+                    cx="100"
+                    cy="100"
+                />
+                <circle
+                    class="progress-ring__circle"
+                    stroke="url(#gradient)"
+                    stroke-width="12"
+                    stroke-linecap="round"
+                    fill="transparent"
+                    r="80"
+                    cx="100"
+                    cy="100"
+                />
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#4facfe" />
+                        <stop offset="100%" stop-color="#00f2fe" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div class="progress-content">
+                <div class="progress-value" id="totalAmount">0</div>
+                <div class="progress-unit">ml</div>
+                <div class="progress-goal">目标: 2000ml</div>
+            </div>
+        </div>
+
+        <!-- 文件状态 -->
+        <div id="statusIndicator" class="status-indicator disconnected">
+            未连接数据文件
+        </div>
+        <button id="selectFileBtn" class="select-file-btn" onclick="selectDataFile()">
+            选择 water-records.json 文件
+        </button>
+
+        <!-- 按钮 -->
+        <div class="buttons">
+            <button class="btn btn-100" onclick="addWater(100)">+100ml</button>
+            <button class="btn btn-550" onclick="addWater(550)">+550ml</button>
+        </div>
+
+        <!-- 输入框 -->
+        <div class="input-section">
+            <input type="number" id="customAmount" placeholder="输入自定义毫升数" min="1" />
+            <button onclick="addCustomWater()">添加</button>
+        </div>
+
+        <!-- 当天记录 -->
+        <div class="records-section">
+            <div class="records-title">今日记录</div>
+            <div class="records-list" id="recordsList">
+                <div class="empty-records">暂无记录</div>
+            </div>
+        </div>
+
+        <!-- 图表 -->
+        <div class="chart-section">
+            <div class="chart-title">最近7天喝水量</div>
+            <div class="chart-container">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOAL = 2000;
+        const DB_NAME = 'WaterTrackerDB';
+        const STORE_NAME = 'fileHandles';
+        const DEFAULT_FILENAME = 'water-records.json';
+        let waterData = {};
+        let fileHandle = null;
+        let isFileConnected = false;
+
+        // IndexedDB 辅助函数
+        const dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onerror = () => reject(request.error);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+        });
+
+        async function getFileHandleFromDB() {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(DEFAULT_FILENAME);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveFileHandleToDB(handle) {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(handle, DEFAULT_FILENAME);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // 更新状态指示器
+        function updateStatus(status, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const selectBtn = document.getElementById('selectFileBtn');
+            indicator.textContent = message;
+            indicator.className = 'status-indicator ' + status;
+
+            if (status === 'connected') {
+                selectBtn.style.display = 'none';
+            } else {
+                selectBtn.style.display = 'block';
+            }
+        }
+
+        // 选择数据文件
+        async function selectDataFile() {
+            try {
+                // 检查是否支持 File System Access API
+                if (!window.showOpenFilePicker) {
+                    alert('您的浏览器不支持文件访问功能，请使用 Chrome 或 Edge 浏览器。');
+                    return;
+                }
+
+                const handles = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'JSON 文件',
+                        accept: { 'application/json': ['.json'] }
+                    }],
+                    multiple: false
+                });
+                fileHandle = handles[0];
+
+                await saveFileHandleToDB(fileHandle);
+                await loadFromFile();
+                updateStatus('connected', '已连接: ' + fileHandle.name);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('选择文件失败:', err);
+                    updateStatus('error', '选择文件失败: ' + err.message);
+                }
+            }
+        }
+
+        // 从文件加载数据
+        async function loadFromFile() {
+            try {
+                const file = await fileHandle.getFile();
+                const text = await file.text();
+                const data = JSON.parse(text);
+                if (typeof data === 'object') {
+                    waterData = data;
+                    isFileConnected = true;
+                    updateUI();
+                } else {
+                    throw new Error('文件格式不正确');
+                }
+            } catch (err) {
+                console.error('读取文件失败:', err);
+                throw err;
+            }
+        }
+
+        // 保存数据到文件
+        async function saveToFile() {
+            if (!fileHandle) return;
+
+            try {
+                cleanOldData(waterData);
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(waterData, null, 2));
+                await writable.close();
+                console.log('数据已保存到:', fileHandle.name);
+            } catch (err) {
+                console.error('保存文件失败:', err);
+                throw err;
+            }
+        }
+
+        // 初始化 - 尝试恢复文件句柄
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateDateDisplay();
+
+            if (window.showOpenFilePicker) {
+                try {
+                    const savedHandle = await getFileHandleFromDB();
+                    if (savedHandle) {
+                        // 请求权限
+                        const permission = await savedHandle.queryPermission({ mode: 'readwrite' });
+                        if (permission === 'granted') {
+                            fileHandle = savedHandle;
+                            await loadFromFile();
+                            updateStatus('connected', '已连接: ' + fileHandle.name);
+                        } else {
+                            updateStatus('disconnected', '需要重新授权访问文件');
+                        }
+                    }
+                } catch (err) {
+                    console.error('恢复文件句柄失败:', err);
+                    updateStatus('disconnected', '需要选择数据文件');
+                }
+            } else {
+                updateStatus('error', '您的浏览器不支持文件访问，请使用 Chrome 或 Edge');
+            }
+
+            updateUI();
+        });
+
+        // 获取今天的日期字符串
+        function getTodayString() {
+            const today = new Date();
+            return today.toISOString().split('T')[0];
+        }
+
+        // 更新日期显示
+        function updateDateDisplay() {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('dateDisplay').textContent = today.toLocaleDateString('zh-CN', options);
+        }
+
+        // 获取存储的数据
+        function getStoredData() {
+            return waterData;
+        }
+
+        // 保存数据
+        async function saveData(data) {
+            waterData = data;
+            if (isFileConnected) {
+                await saveToFile();
+            }
+        }
+
+        // 添加喝水记录
+        async function addWater(amount) {
+            const today = getTodayString();
+            const data = getStoredData();
+
+            if (!data[today]) {
+                data[today] = [];
+            }
+
+            data[today].push({
+                id: Date.now(),
+                amount: amount,
+                time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+            });
+
+            await saveData(data);
+            updateUI();
+        }
+
+        // 添加自定义水量
+        async function addCustomWater() {
+            const input = document.getElementById('customAmount');
+            const amount = parseInt(input.value);
+
+            if (amount && amount > 0) {
+                await addWater(amount);
+                input.value = '';
+            } else {
+                alert('请输入有效的正整数');
+            }
+        }
+
+        // 删除记录
+        async function deleteRecord(recordId) {
+            const today = getTodayString();
+            const data = getStoredData();
+
+            if (data[today]) {
+                data[today] = data[today].filter(r => r.id !== recordId);
+                await saveData(data);
+                updateUI();
+            }
+        }
+
+        // 清理旧数据（只保留最近30天）
+        function cleanOldData(data) {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            Object.keys(data).forEach(date => {
+                const recordDate = new Date(date);
+                if (recordDate < thirtyDaysAgo) {
+                    delete data[date];
+                }
+            });
+        }
+
+        // 计算今日总喝水量
+        function getTodayTotal() {
+            const today = getTodayString();
+            const data = getStoredData();
+            const todayRecords = data[today] || [];
+            return todayRecords.reduce((sum, record) => sum + record.amount, 0);
+        }
+
+        // 更新圆环进度
+        function updateProgress(total) {
+            const circle = document.querySelector('.progress-ring__circle');
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+            const progress = Math.min(total / GOAL, 1);
+            const offset = circumference - progress * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        // 更新UI
+        function updateUI() {
+            const total = getTodayTotal();
+            document.getElementById('totalAmount').textContent = total;
+            updateProgress(total);
+            updateRecordsList();
+            drawChart();
+        }
+
+        // 更新记录列表
+        function updateRecordsList() {
+            const today = getTodayString();
+            const data = getStoredData();
+            const records = data[today] || [];
+            const listEl = document.getElementById('recordsList');
+
+            if (records.length === 0) {
+                listEl.innerHTML = '<div class="empty-records">暂无记录</div>';
+                return;
+            }
+
+            listEl.innerHTML = records.map(record => `
+                <div class="record-item">
+                    <span class="record-time">${record.time}</span>
+                    <div>
+                        <span class="record-amount">+${record.amount}ml</span>
+                        <button class="delete-btn" onclick="deleteRecord(${record.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 滚动到底部
+            listEl.scrollTop = listEl.scrollHeight;
+        }
+
+        // 获取最近7天的数据
+        function getLast7DaysData() {
+            const data = getStoredData();
+            const result = [];
+            const today = new Date();
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const records = data[dateStr] || [];
+                const total = records.reduce((sum, r) => sum + r.amount, 0);
+
+                result.push({
+                    date: date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
+                    total: total
+                });
+            }
+
+            return result;
+        }
+
+        // 绘制折线图
+        function drawChart() {
+            const canvas = document.getElementById('chart');
+            const ctx = canvas.getContext('2d');
+            const data = getLast7DaysData();
+
+            // 设置画布大小
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            const padding = 40;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 计算最大值
+            const maxAmount = Math.max(...data.map(d => d.total), GOAL);
+            const yMax = Math.ceil(maxAmount / 500) * 500;
+
+            // 绘制网格和标签
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.fillStyle = '#999';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'right';
+
+            // Y轴
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + height - (i / 4) * height;
+                const value = Math.round((i / 4) * yMax);
+
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+
+                ctx.fillText(value, padding - 5, y + 4);
+            }
+
+            // X轴
+            ctx.textAlign = 'center';
+            const xStep = width / (data.length - 1);
+            data.forEach((d, i) => {
+                const x = padding + i * xStep;
+                ctx.fillText(d.date, x, canvas.height - padding + 20);
+            });
+
+            // 计算坐标点
+            const points = data.map((d, i) => ({
+                x: padding + i * xStep,
+                y: padding + height - (d.total / yMax) * height,
+                value: d.total
+            }));
+
+            // 绘制折线
+            if (points.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 填充渐变
+                const gradient = ctx.createLinearGradient(0, padding, 0, canvas.height - padding);
+                gradient.addColorStop(0, 'rgba(102, 126, 234, 0.3)');
+                gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+
+                ctx.lineTo(points[points.length - 1].x, canvas.height - padding);
+                ctx.lineTo(points[0].x, canvas.height - padding);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+
+            // 绘制数据点和数值
+            points.forEach(point => {
+                // 数据点
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#667eea';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 数值标签
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(point.value, point.x, point.y - 10);
+            });
+        }
+
+        // 监听窗口大小变化，重绘图表
+        window.addEventListener('resize', drawChart);
+
+        // 支持回车键提交
+        document.getElementById('customAmount').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addCustomWater();
+            }
+        });
+    </script>
+</body>
+</html>

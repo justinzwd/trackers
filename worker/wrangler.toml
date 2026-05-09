@@ -1,0 +1,15 @@
+name = "trackers-api"
+main = "index.js"
+compatibility_date = "2024-03-20"
+
+# 绑定 D1 数据库
+[[d1_databases]]
+binding = "DB"
+database_name = "trackers-db"
+# 执行 npm run db:create 后，复制返回的 database_id 到这里
+database_id = "1f6e34b0-281c-42c7-9da5-ea686a31bea5"
+
+# 本地开发配置
+[dev]
+port = 8787
+local_protocol = "http"

@@ -1,1 +1,20 @@
 .DS_Store
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Wrangler
+.wrangler/
+.dev.vars

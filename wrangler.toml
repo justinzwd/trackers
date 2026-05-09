@@ -1,0 +1,9 @@
+name = "trackers-app"
+compatibility_date = "2024-03-20"
+pages_build_output_dir = "dist"
+
+# 绑定 D1 数据库用于 Pages Functions
+[[d1_databases]]
+binding = "DB"
+database_name = "trackers-db"
+database_id = "1f6e34b0-281c-42c7-9da5-ea686a31bea5"

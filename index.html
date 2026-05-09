@@ -442,16 +442,16 @@
 
         // Firebase 配置 - 请替换为你自己的配置
         const FIREBASE_CONFIG = {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyCyOf3OsrT75BYBZVGrOxYrrjjI6FSQ9qM",
+            authDomain: "trackers-60fc4.firebaseapp.com",
+            projectId: "trackers-60fc4",
+            storageBucket: "trackers-60fc4.firebasestorage.app",
+            messagingSenderId: "1097582060818",
+            appId: "1:1097582060818:web:e31ed34eb2384db47cffcb"
         };
 
         // 用户 ID (可以是匿名登录后的 uid，或者自定义标识)
-        let USER_ID = 'default-user'; // 请替换为实际的用户标识
+        let USER_ID = 'justinzwd'; // 请替换为实际的用户标识
 
         let waterData = {};
         let isConnected = false;
@@ -475,12 +475,9 @@
                 // 加载 Firebase SDK
                 await loadFirebaseSDK();
 
-                // 初始化 Firebase
-                const { initializeApp } = firebase;
-                const { getFirestore } = firebase.firestore;
-
-                const app = initializeApp(FIREBASE_CONFIG);
-                db = getFirestore(app);
+                // 初始化 Firebase (Compat 版本)
+                const app = firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
 
                 isConnected = true;
                 updateStatus('connected', '已连接 Firebase');
@@ -492,7 +489,7 @@
             }
         }
 
-        // 加载 Firebase SDK (使用 ES Modules)
+        // 加载 Firebase SDK (使用 Compat 版本)
         async function loadFirebaseSDK() {
             return new Promise((resolve, reject) => {
                 // 检查是否已加载
@@ -501,31 +498,28 @@
                     return;
                 }
 
-                const script = document.createElement('script');
-                script.type = 'module';
-                script.textContent = `
-                    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-                    import { getFirestore, collection, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-                    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+                // 按顺序加载 Firebase SDK (Compat 版本)
+                const scripts = [
+                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+                    'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js'
+                ];
 
-                    window.firebase = {
-                        initializeApp,
-                        firestore: { getFirestore, collection, doc, getDoc, setDoc, updateDoc },
-                        auth: { getAuth, signInAnonymously }
-                    };
-                    window.firebaseLoaded = true;
-                `;
-                script.onload = () => {
-                    // 等待模块加载完成
-                    const checkInterval = setInterval(() => {
-                        if (window.firebaseLoaded) {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 100);
+                let loadedCount = 0;
+                const onScriptLoad = () => {
+                    loadedCount++;
+                    if (loadedCount === scripts.length) {
+                        resolve();
+                    }
                 };
-                script.onerror = reject;
-                document.head.appendChild(script);
+
+                scripts.forEach(src => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = onScriptLoad;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
             });
         }
 
@@ -539,11 +533,11 @@
             try {
                 updateStatus('loading', '正在加载数据...');
 
-                const { doc, getDoc } = firebase.firestore;
-                const userDocRef = doc(db, 'waterRecords', USER_ID);
-                const docSnap = await getDoc(userDocRef);
+                // Compat 版本的 API
+                const userDocRef = db.collection('waterRecords').doc(USER_ID);
+                const docSnap = await userDocRef.get();
 
-                if (docSnap.exists()) {
+                if (docSnap.exists) {
                     waterData = docSnap.data() || {};
                     if (typeof waterData !== 'object') {
                         waterData = {};
@@ -571,9 +565,9 @@
             try {
                 cleanOldData(waterData);
 
-                const { doc, setDoc } = firebase.firestore;
-                const userDocRef = doc(db, 'waterRecords', USER_ID);
-                await setDoc(userDocRef, waterData);
+                // Compat 版本的 API
+                const userDocRef = db.collection('waterRecords').doc(USER_ID);
+                await userDocRef.set(waterData);
 
                 console.log('数据已保存到 Firebase');
             } catch (err) {

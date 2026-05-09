@@ -121,89 +121,218 @@ npm run dev
 | POST | `/api/water` | 添加记录 `{ "amount": 100 }` |
 | DELETE | `/api/water/:recordId` | 删除记录 |
 
-## 部署到 Cloudflare
+## 本地开发环境部署
 
-### 1. 部署后端 (Workers)
+代码更新后，要在本地环境查看效果，按照以下步骤操作：
+
+### 方式一：仅启动前端（快速预览）
+
+如果你只需要预览前端 UI 变化（不涉及 API 或数据库变更）：
+
+```bash
+# 安装前端依赖（首次运行）
+npm install
+
+# 启动前端开发服务器
+npm run dev
+```
+
+访问 http://localhost:5173
+
+### 方式二：完整本地开发（前后端 + 数据库）
+
+如果你修改了 API 接口或数据库相关代码：
+
+#### 1. 准备后端环境
+
+```bash
+# 进入 worker 目录
+cd worker
+
+# 安装后端依赖（首次运行）
+npm install
+
+# 启动本地 Worker（使用本地 SQLite 数据库）
+npm run dev
+```
+
+此时后端会运行在 http://localhost:8787，数据存储在本地 `.wrangler/state/v3/d1/miniflare-D1DatabaseObject` 中。
+
+#### 2. 启动前端（新终端窗口）
+
+```bash
+# 返回项目根目录
+cd ..
+
+# 启动前端开发服务器
+npm run dev
+```
+
+访问 http://localhost:5173
+
+#### 3. 测试流程
+
+- 前端会自动连接本地 Worker API（http://localhost:8787）
+- 所有数据操作都会保存到本地 SQLite 数据库
+- 修改代码后，前端会自动热重载
+- Worker 修改后需要重启：在终端按 `Ctrl+C` 停止，然后重新 `npm run dev`
+
+### 本地环境数据管理
 
 ```bash
 cd worker
+
+# 初始化本地数据库表结构
+npm run db:init
+
+# 查看本地数据库数据
+npm run db:local
+```
+
+## 生产环境部署
+
+代码更新后，要将变更部署到生产环境供所有人访问，按照以下步骤操作：
+
+### 步骤 1：提交代码更改
+
+```bash
+# 查看修改内容
+git status
+
+# 添加所有修改
+git add .
+
+# 提交代码
+git commit -m "feat: 描述你的更改内容"
+
+# 推送到远程仓库
+git push
+```
+
+### 步骤 2：部署后端 Workers API
+
+```bash
+# 进入 worker 目录
+cd worker
+
+# 部署到 Cloudflare Workers
 npm run deploy
 ```
 
-部署成功后，你会看到类似这样的输出：
+部署成功后，你会看到类似输出：
 ```
 Published trackers-api (1.23 sec)
   https://trackers-api.your-account.workers.dev
 ```
 
-**复制这个 Workers URL**（例如：`https://trackers-api.your-account.workers.dev`）
+**记住这个 URL**，这是你的生产环境 API 地址。
 
-### 2. 配置前端 API 地址
+### 步骤 3：部署前端到 Cloudflare Pages
 
-有两种方式：
-
-**方式一：使用环境变量（推荐）**
-
-创建 `.env` 文件（或复制 `.env.example`）：
+#### 方式一：使用 Wrangler 命令行部署（推荐）
 
 ```bash
-cp .env.example .env
-```
+# 返回项目根目录
+cd ..
 
-编辑 `.env` 文件，填入你的 Workers URL：
-
-```
-VITE_WORKERS_URL=https://trackers-api.your-account.workers.dev
-```
-
-**方式二：直接修改代码**
-
-编辑 `src/api/index.js`，找到这行：
-
-```javascript
-const WORKERS_URL = import.meta.env.VITE_WORKERS_URL || ''
-```
-
-改为：
-
-```javascript
-const WORKERS_URL = 'https://trackers-api.your-account.workers.dev'
-```
-
-### 3. 部署前端 (Pages)
-
-```bash
+# 构建前端
 npm run build
-```
-
-使用 Wrangler 部署：
-
-```bash
-# 如果还没全局安装 wrangler
-npm install -g wrangler
 
 # 部署到 Pages
 wrangler pages deploy dist --project-name=trackers-app
 ```
 
-### 4. 访问应用
-
-部署成功后，你会看到：
+部署成功后会显示：
 ```
 ✨ Successfully published your Workers Site
    https://trackers-app.pages.dev
 ```
 
-访问这个 URL 即可使用你的应用。
+访问这个 URL 即可在生产环境查看你的应用。
 
-### 5. 配置自定义域名 (可选)
+#### 方式二：上传部署（无 Wrangler 环境）
+
+1. 进入 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 选择 **Workers & Pages** → **Create application** → **Pages**
+3. 选择 **Upload assets**
+4. 上传 `dist` 文件夹中的内容
+5. 点击 **Deploy**
+
+### 步骤 4：验证部署
+
+1. **验证后端 API**：
+   ```bash
+   # 获取喝水记录
+   curl https://trackers-api.your-account.workers.dev/api/water
+
+   # 添加测试记录
+   curl -X POST https://trackers-api.your-account.workers.dev/api/water \n     -H "Content-Type: application/json" \n     -d '{"amount": 100}'
+   ```
+
+2. **验证前端**：
+   - 访问 https://trackers-app.pages.dev
+   - 测试各项功能是否正常
+
+### 步骤 5：配置自定义域名（可选，推荐）
+
+**配置 Pages 自定义域名**：
 
 1. 进入 Cloudflare Dashboard → Pages
-2. 选择你的项目 → Custom domains
-3. 添加你自己的域名
-4. 按照指引配置 DNS
+2. 选择 `trackers-app` 项目 → Custom domains
+3. 添加你自己的域名（如 `tools.example.com`）
+4. 按照指引配置 DNS 记录
 
-使用自定义域名可以让国内访问更稳定。
+**配置 Workers 自定义域名**：
+
+## 部署检查清单
+
+在部署到生产环境前，请确认：
+
+- [ ] 代码已提交到 Git
+- [ ] 本地测试通过
+- [ ] `schema.sql` 更新已应用到数据库（如需）
+  ```bash
+  cd worker
+  npm run db:migrate  # 生产环境数据库迁移
+  ```
+- [ ] API 地址配置正确（`src/api/index.js` 或 `.env`）
+- [ ] 生产环境数据已备份（如需要）
+
+## 常见问题
+
+### Q: 本地开发时数据不同步？
+
+A: 本地使用 `.wrangler` 目录中的 SQLite 数据库，与生产环境的 D1 数据库完全独立。如需同步数据，可以：
+
+```bash
+# 导出生产数据到本地
+cd worker
+npm run db:export
+
+# 导入本地数据到生产（谨慎操作）
+npm run db:import
+```
+
+### Q: 部署后页面空白？
+
+A: 检查：
+1. API 地址是否正确配置
+2. 浏览器控制台是否有错误
+3. Workers 是否部署成功
+
+### Q: 404 错误？
+
+A: 确认：
+1. API 路径正确（`/api/water`）
+2. Workers URL 正确
+3. 路由在 `worker/index.js` 中已定义
+
+## 注意事项
+
+1. **国内访问**: 使用 Cloudflare CDN 全球加速，国内访问基本稳定
+2. **数据备份**: D1 数据建议定期备份
+3. **速率限制**: 超过免费额度可能需要付费
+4. **API 跨域**: Workers 默认支持跨域请求
 
 ## 添加新工具
 

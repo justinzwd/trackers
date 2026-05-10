@@ -40,6 +40,35 @@ trackers/
 | amount | INTEGER | 喝水量（毫升） |
 | recorded_at | DATETIME | 记录时间 |
 
+### dinner_records - 晚饭记录表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键，自增 |
+| spent | REAL | 实际花销（元） |
+| saved | REAL | 攒钱金额（预算-花销） |
+| recorded_at | DATETIME | 记录时间 |
+
+### bonus_items - Bonus 积分项目表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键，自增 |
+| name | TEXT | 项目名称 |
+| value | INTEGER | 单次奖励积分 |
+| sort_order | INTEGER | 排序顺序 |
+| created_at | DATETIME | 创建时间 |
+
+### bonus_history - Bonus 积分历史记录表
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键，自增 |
+| item_id | INTEGER | 关联的项目ID |
+| item_name | TEXT | 项目名称（冗余存储） |
+| amount | INTEGER | 奖励积分数 |
+| recorded_at | DATETIME | 记录时间 |
+
 **设计理念**：
 - 每个工具单独一张表，简单直接
 - 无用户概念，所有记录共享
@@ -120,6 +149,34 @@ npm run dev
 | GET | `/api/water/history` | 获取最近7天历史数据 |
 | POST | `/api/water` | 添加记录 `{ "amount": 100 }` |
 | DELETE | `/api/water/:recordId` | 删除记录 |
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/water` | 获取今日喝水记录 |
+| GET | `/api/water?date=2024-05-09` | 获取指定日期记录 |
+| GET | `/api/water/history` | 获取最近7天历史数据 |
+| POST | `/api/water` | 添加记录 `{ "amount": 100 }` |
+| DELETE | `/api/water/:recordId` | 删除记录 |
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/dinner` | 获取今日晚饭记录 |
+| GET | `/api/dinner?all=true` | 获取所有记录 |
+| POST | `/api/dinner` | 添加记录 `{ "spent": 15.5 }` |
+| DELETE | `/api/dinner/:recordId` | 删除记录 |
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/bonus` | 获取所有数据 |
+| GET | `/api/bonus?action=items` | 获取项目列表 |
+| GET | `/api/bonus?action=history` | 获取历史记录 |
+| GET | `/api/bonus?action=total` | 获取总积分 |
+| POST | `/api/bonus` | 添加项目 `{ "name": "跑步", "value": 15 }` |
+| POST | `/api/bonus?action=increment` | 增加次数 `{ "itemId": 1 }` |
+| PUT | `/api/bonus?action=reorder` | 更新排序 `{ "items": [...] }` |
+| DELETE | `/api/bonus?action=delete&id=1` | 删除项目 |
+| DELETE | `/api/bonus?action=history&id=1` | 删除历史记录 |
+| DELETE | `/api/bonus?action=clear-history` | 清空历史 |
 
 ## 本地开发环境部署
 

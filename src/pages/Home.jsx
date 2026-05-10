@@ -5,6 +5,7 @@ function Home() {
   const tools = [
     { id: 'water', name: '喝水记录', icon: '💧' },
     { id: 'dinner', name: '晚饭攒钱', icon: '🍽️ ' },
+    { id: 'bonus', name: 'Bonus 积分', icon: '🎁' },
   ]
 
   return (

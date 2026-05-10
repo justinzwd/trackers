@@ -88,3 +88,70 @@ export async function deleteDinnerRecord(recordId) {
 export async function getAllDinnerRecords() {
   return apiRequest(`/dinner?all=true`)
 }
+
+// ============ Bonus 积分相关 API ============
+
+// 获取所有 Bonus 数据
+export async function getBonusData() {
+  return apiRequest(`/bonus`)
+}
+
+// 获取 Bonus 项目列表
+export async function getBonusItems() {
+  return apiRequest(`/bonus?action=items`)
+}
+
+// 获取 Bonus 历史记录
+export async function getBonusHistory() {
+  return apiRequest(`/bonus?action=history`)
+}
+
+// 获取总积分
+export async function getBonusTotal() {
+  return apiRequest(`/bonus?action=total`)
+}
+
+// 添加新 Bonus 项目
+export async function addBonusItem(name, value) {
+  return apiRequest(`/bonus`, {
+    method: 'POST',
+    body: JSON.stringify({ name, value }),
+  })
+}
+
+// 增加积分记录
+export async function incrementBonusCount(itemId) {
+  return apiRequest(`/bonus?action=increment`, {
+    method: 'POST',
+    body: JSON.stringify({ itemId }),
+  })
+}
+
+// 删除 Bonus 项目
+export async function deleteBonusItem(itemId) {
+  return apiRequest(`/bonus?action=delete&id=${itemId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 删除 Bonus 历史记录
+export async function deleteBonusHistory(recordId) {
+  return apiRequest(`/bonus?action=history&id=${recordId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 清空历史记录
+export async function clearBonusHistory() {
+  return apiRequest(`/bonus?action=clear-history`, {
+    method: 'DELETE',
+  })
+}
+
+// 重新排序项目
+export async function reorderBonusItems(items) {
+  return apiRequest(`/bonus?action=reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ items }),
+  })
+}

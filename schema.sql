@@ -22,12 +22,39 @@ CREATE TABLE IF NOT EXISTS dinner_records (
 );
 
 -- ============================================
+-- Bonus 积分项目表
+-- ============================================
+CREATE TABLE IF NOT EXISTS bonus_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,             -- 项目名称
+  value INTEGER NOT NULL,         -- 单次奖励积分
+  sort_order INTEGER DEFAULT 0,  -- 排序顺序
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- Bonus 积分历史记录表
+-- ============================================
+CREATE TABLE IF NOT EXISTS bonus_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id INTEGER NOT NULL,       -- 关联的项目ID
+  item_name TEXT NOT NULL,        -- 项目名称（冗余存储，便于查询）
+  amount INTEGER NOT NULL,        -- 奖励积分数
+  recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (item_id) REFERENCES bonus_items(id) ON DELETE CASCADE
+);
+
+-- ============================================
 -- 创建索引以提高查询性能
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_water_records_recorded_at ON water_records(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_water_records_date ON water_records(DATE(recorded_at));
 CREATE INDEX IF NOT EXISTS idx_dinner_records_recorded_at ON dinner_records(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_dinner_records_date ON dinner_records(DATE(recorded_at));
+CREATE INDEX IF NOT EXISTS idx_bonus_items_sort_order ON bonus_items(sort_order);
+CREATE INDEX IF NOT EXISTS idx_bonus_history_item_id ON bonus_history(item_id);
+CREATE INDEX IF NOT EXISTS idx_bonus_history_recorded_at ON bonus_history(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_bonus_history_date ON bonus_history(DATE(recorded_at));
 
 -- ============================================
 -- 查询示例
@@ -58,3 +85,35 @@ CREATE INDEX IF NOT EXISTS idx_dinner_records_date ON dinner_records(DATE(record
 -- WHERE DATE(recorded_at) >= DATE('now', '-6 days')
 -- GROUP BY DATE(recorded_at)
 -- ORDER BY date;
+
+-- ============================================
+-- Bonus 积分查询示例
+-- ============================================
+
+-- 查询所有积分项目（按排序顺序）
+-- SELECT id, name, value, sort_order
+-- FROM bonus_items
+-- ORDER BY sort_order, id;
+
+-- 获取某项目的当前累计次数
+-- SELECT COUNT(*) as count
+-- FROM bonus_history
+-- WHERE item_id = ?;
+
+-- 查询今日积分记录
+-- SELECT bh.id, bh.item_id, bh.item_name, bh.amount, bh.recorded_at
+-- FROM bonus_history bh
+-- WHERE DATE(bh.recorded_at) = DATE('now')
+-- ORDER BY bh.recorded_at DESC;
+
+-- 查询所有历史记录
+-- SELECT bh.id, bh.item_id, bh.item_name, bh.amount, bh.recorded_at
+-- FROM bonus_history bh
+-- ORDER BY bh.recorded_at DESC;
+
+-- 计算总积分
+-- SELECT SUM(bh.amount) as total
+-- FROM bonus_history bh;
+
+-- 删除历史记录（同时减少对应项目次数）
+-- 注意：需要先获取记录的 item_id，然后删除，再可选更新其他统计

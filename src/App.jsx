@@ -8,15 +8,13 @@ import './App.css'
 
 function App() {
   return (
-    <div className="container">
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/water" element={<WaterTracker />} />
-        <Route path="/dinner" element={<DinnerTracker />} />
-        <Route path="/bonus" element={<BonusTracker />} />
-        <Route path="/reading" element={<ReadingTracker />} />
-      </Routes>
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/water" element={<WaterTracker />} />
+      <Route path="/dinner" element={<DinnerTracker />} />
+      <Route path="/bonus" element={<BonusTracker />} />
+      <Route path="/reading" element={<ReadingTracker />} />
+    </Routes>
   )
 }
 

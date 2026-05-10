@@ -10,7 +10,7 @@ function Home() {
   ]
 
   return (
-    <div className="home-view">
+    <div className="home">
       <h1>工具集</h1>
       <div className="tool-grid">
         {tools.map(tool => (

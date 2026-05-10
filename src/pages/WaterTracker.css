@@ -1,3 +1,11 @@
 .water-tracker {
-  /* 继承 App.css 中的样式 */
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  min-height: 100vh;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }

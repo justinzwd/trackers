@@ -60,3 +60,31 @@ export async function getTodayTotal() {
   const records = await getWaterRecords(today)
   return records.reduce((sum, r) => sum + r.amount, 0)
 }
+
+// ============ 晚饭攒钱相关 API ============
+
+// 获取某天的晚饭记录
+export async function getDinnerRecords(date = null) {
+  const dateParam = date ? `?date=${date}` : ''
+  return apiRequest(`/dinner${dateParam}`)
+}
+
+// 添加晚饭记录
+export async function addDinnerRecord(spent) {
+  return apiRequest(`/dinner`, {
+    method: 'POST',
+    body: JSON.stringify({ spent }),
+  })
+}
+
+// 删除晚饭记录
+export async function deleteDinnerRecord(recordId) {
+  return apiRequest(`/dinner/${recordId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 获取所有晚饭记录
+export async function getAllDinnerRecords() {
+  return apiRequest(`/dinner?all=true`)
+}

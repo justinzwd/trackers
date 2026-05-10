@@ -4,6 +4,7 @@ import './Home.css'
 function Home() {
   const tools = [
     { id: 'water', name: '喝水记录', icon: '💧' },
+    { id: 'dinner', name: '晚饭攒钱', icon: '🍽️ ' },
   ]
 
   return (

@@ -1,0 +1,258 @@
+.dinner-tracker {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.date-display {
+  text-align: center;
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* 总计显示 */
+.stats-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-box.saved-box {
+  background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+  color: white;
+}
+
+.stat-box.spent-box {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+/* 状态指示 */
+.status-indicator {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.status-indicator.connected {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-indicator.loading {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-indicator.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* 预算信息 */
+.budget-info {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.budget-amount {
+  color: #4caf50;
+  font-weight: bold;
+  margin-left: 5px;
+}
+
+/* 添加记录表单 */
+.add-form {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px dashed #ddd;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.add-form input {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.add-form input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+.add-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: background 0.3s ease;
+  white-space: nowrap;
+}
+
+.add-btn:hover {
+  background: #45a049;
+}
+
+/* 记录列表 */
+.records-section {
+  margin-top: 30px;
+}
+
+.records-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.record-item:hover {
+  background: #f0f0f0;
+}
+
+.record-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.record-time {
+  font-weight: 500;
+  color: #333;
+  min-width: 80px;
+}
+
+.record-spent {
+  color: #ff6b6b;
+  font-weight: bold;
+  min-width: 70px;
+}
+
+.record-saved {
+  color: #4caf50;
+  font-weight: bold;
+  min-width: 70px;
+}
+
+.record-saved.negative {
+  color: #ff6b6b;
+}
+
+.delete-btn {
+  background: transparent;
+  color: #999;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #fee;
+  color: #ff6b6b;
+}
+
+.empty-records {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+  .add-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .add-btn {
+    width: 100%;
+  }
+
+  .record-info {
+    gap: 10px;
+  }
+}
+
+.record-date {
+  font-weight: 500;
+  color: #666;
+  min-width: 120px;
+}
+
+.record-time {
+  font-weight: 500;
+  color: #999;
+  min-width: 80px;
+}

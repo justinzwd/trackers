@@ -45,16 +45,55 @@ CREATE TABLE IF NOT EXISTS bonus_history (
 );
 
 -- ============================================
+-- 读书记录表
+-- ============================================
+
+-- 书籍表
+CREATE TABLE IF NOT EXISTS reading_books (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,                 -- 书名
+  completed INTEGER DEFAULT 0,         -- 是否读完 (0: 未完成, 1: 已完成)
+  completed_date TEXT,                 -- 完成日期
+  sort_order INTEGER DEFAULT 0,        -- 排序顺序
+  deleted INTEGER DEFAULT 0,           -- 是否删除 (0: 正常, 1: 已删除)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 章节表
+CREATE TABLE IF NOT EXISTS reading_chapters (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER NOT NULL,            -- 所属书籍ID
+  chapter_number TEXT NOT NULL,        -- 章节号
+  chapter_name TEXT NOT NULL,          -- 章节名称
+  completed INTEGER DEFAULT 0,         -- 是否读完 (0: 未完成, 1: 已完成)
+  completed_date TEXT,                 -- 完成日期
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (book_id) REFERENCES reading_books(id) ON DELETE CASCADE
+);
+
+-- ============================================
 -- 创建索引以提高查询性能
 -- ============================================
+
+-- 喝水记录索引
 CREATE INDEX IF NOT EXISTS idx_water_records_recorded_at ON water_records(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_water_records_date ON water_records(DATE(recorded_at));
+
+-- 晚饭记录索引
 CREATE INDEX IF NOT EXISTS idx_dinner_records_recorded_at ON dinner_records(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_dinner_records_date ON dinner_records(DATE(recorded_at));
+
+-- Bonus 积分索引
 CREATE INDEX IF NOT EXISTS idx_bonus_items_sort_order ON bonus_items(sort_order);
 CREATE INDEX IF NOT EXISTS idx_bonus_history_item_id ON bonus_history(item_id);
 CREATE INDEX IF NOT EXISTS idx_bonus_history_recorded_at ON bonus_history(recorded_at);
 CREATE INDEX IF NOT EXISTS idx_bonus_history_date ON bonus_history(DATE(recorded_at));
+
+-- 读书记录索引
+CREATE INDEX IF NOT EXISTS idx_reading_books_sort_order ON reading_books(sort_order);
+CREATE INDEX IF NOT EXISTS idx_reading_books_deleted ON reading_books(deleted);
+CREATE INDEX IF NOT EXISTS idx_reading_chapters_book_id ON reading_chapters(book_id);
+CREATE INDEX IF NOT EXISTS idx_reading_chapters_completed ON reading_chapters(completed);
 
 -- ============================================
 -- 查询示例
@@ -117,3 +156,26 @@ CREATE INDEX IF NOT EXISTS idx_bonus_history_date ON bonus_history(DATE(recorded
 
 -- 删除历史记录（同时减少对应项目次数）
 -- 注意：需要先获取记录的 item_id，然后删除，再可选更新其他统计
+
+-- ============================================
+-- 读书记录查询示例
+-- ============================================
+
+-- 查询所有未删除的书籍（按排序顺序）
+-- SELECT id, title, completed, completed_date, sort_order
+-- FROM reading_books
+-- WHERE deleted = 0
+-- ORDER BY sort_order, id;
+
+-- 查询某本书的所有章节
+-- SELECT id, chapter_number, chapter_name, completed, completed_date
+-- FROM reading_chapters
+-- WHERE book_id = ?
+-- ORDER BY id;
+
+-- 查询某本书的阅读进度
+-- SELECT
+--   COUNT(*) as total_chapters,
+--   SUM(completed) as completed_chapters
+-- FROM reading_chapters
+-- WHERE book_id = ?;

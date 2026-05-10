@@ -1,0 +1,432 @@
+.reading-tracker {
+  /* 继承 App.css 中的样式 */
+}
+
+.reading-tracker .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 15px;
+}
+
+.reading-tracker .header h1 {
+  margin-bottom: 0;
+}
+
+.reading-tracker .stats {
+  display: flex;
+  gap: 10px;
+}
+
+.reading-tracker .stat-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 70px;
+}
+
+.reading-tracker .stat-label {
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+.reading-tracker .stat-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* 书籍列表 */
+.reading-tracker .books-list {
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.reading-tracker .book-item {
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.reading-tracker .book-item:hover {
+  background: #f0f0f0;
+}
+
+.reading-tracker .book-item.dragging {
+  opacity: 0.5;
+  background: #e3f2fd;
+}
+
+.reading-tracker .book-header {
+  display: grid;
+  grid-template-columns: 30px 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.reading-tracker .book-header:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.reading-tracker .drag-handle {
+  cursor: grab;
+  color: #999;
+  font-size: 14px;
+  user-select: none;
+}
+
+.reading-tracker .drag-handle:hover {
+  color: #667eea;
+}
+
+.reading-tracker .book-title {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-tracker .book-title.completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.reading-tracker .book-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+.reading-tracker .book-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.reading-tracker .toggle-complete-btn {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.reading-tracker .toggle-complete-btn.completed {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.reading-tracker .toggle-complete-btn:hover {
+  transform: scale(1.05);
+}
+
+.reading-tracker .delete-book-btn {
+  background: transparent;
+  color: #999;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.reading-tracker .delete-book-btn:hover {
+  background: #fee;
+  color: #ff6b6b;
+}
+
+.reading-tracker .completed-date {
+  font-size: 10px;
+  color: #4caf50;
+  padding: 2px 6px;
+  background: #e8f5e9;
+  border-radius: 4px;
+}
+
+/* 章节列表 */
+.reading-tracker .chapters-container {
+  padding: 0 10px 10px 40px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+.reading-tracker .chapters-list {
+  padding: 10px 0;
+}
+
+.reading-tracker .empty-chapters {
+  color: #999;
+  font-size: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.reading-tracker .chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: white;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  transition: all 0.2s ease;
+}
+
+.reading-tracker .chapter-item:hover {
+  background: #f5f5f5;
+}
+
+.reading-tracker .chapter-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4caf50;
+}
+
+.reading-tracker .chapter-number {
+  font-size: 11px;
+  color: #999;
+  min-width: 40px;
+}
+
+.reading-tracker .chapter-name {
+  flex: 1;
+  font-size: 12px;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-tracker .chapter-name.completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.reading-tracker .chapter-date {
+  font-size: 10px;
+  color: #4caf50;
+  padding: 2px 5px;
+  background: #e8f5e9;
+  border-radius: 4px;
+}
+
+.reading-tracker .chapter-delete {
+  background: transparent;
+  color: #ccc;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.reading-tracker .chapter-delete:hover {
+  background: #fee;
+  color: #ff6b6b;
+}
+
+/* 添加章节表单 */
+.reading-tracker .add-chapter-form {
+  display: flex;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.reading-tracker .add-chapter-form input {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 12px;
+  transition: border-color 0.3s ease;
+}
+
+.reading-tracker .add-chapter-form input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.reading-tracker .add-chapter-form .chapter-number-input {
+  flex: 1;
+  min-width: 50px;
+}
+
+.reading-tracker .add-chapter-form input:not(.chapter-number-input) {
+  flex: 5;
+}
+
+.reading-tracker .add-chapter-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.3s ease;
+}
+
+.reading-tracker .add-chapter-btn:hover {
+  background: #5568d3;
+}
+
+/* 添加书籍表单 */
+.reading-tracker .add-book-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+}
+
+.reading-tracker .add-book-form input {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.reading-tracker .add-book-form input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.reading-tracker .add-book-form button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.reading-tracker .add-book-form button:hover {
+  background: #5568d3;
+}
+
+/* 空状态 */
+.reading-tracker .empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #999;
+}
+
+.reading-tracker .empty-state-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+/* 弹窗 */
+.reading-tracker .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.reading-tracker .modal {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 350px;
+  width: 90%;
+  text-align: center;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.reading-tracker .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.reading-tracker .modal-message {
+  color: #666;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.reading-tracker .modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.reading-tracker .modal-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.reading-tracker .modal-btn.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.reading-tracker .modal-btn.cancel:hover {
+  background: #e0e0e0;
+}
+
+.reading-tracker .modal-btn.confirm {
+  background: #ff6b6b;
+  color: white;
+}
+
+.reading-tracker .modal-btn.confirm:hover {
+  background: #ee5a5a;
+}
+
+.reading-tracker .progress-ring {
+  flex-shrink: 0;
+  min-width: 14px;
+}

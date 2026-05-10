@@ -6,6 +6,7 @@ function Home() {
     { id: 'water', name: '喝水记录', icon: '💧' },
     { id: 'dinner', name: '晚饭攒钱', icon: '🍽️ ' },
     { id: 'bonus', name: 'Bonus 积分', icon: '🎁' },
+    { id: 'reading', name: '读书记录', icon: '📚' },
   ]
 
   return (

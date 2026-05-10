@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>读书记录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* 文件状态 */
+        .status-indicator {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+
+        .status-indicator.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-indicator.disconnected {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .select-file-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .select-file-btn:hover {
+            background: #5568d3;
+        }
+
+        /* 书籍列表 */
+        .books-list {
+            margin-bottom: 30px;
+        }
+
+        .book-item {
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .book-item:hover {
+            background: #f0f0f0;
+        }
+
+        .book-item.dragging {
+            opacity: 0.5;
+            background: #e3f2fd;
+            transform: scale(1.01);
+        }
+
+        .book-item.drag-over {
+            border: 2px dashed #667eea;
+            background: #e8eaf6;
+        }
+
+        .book-header {
+            display: grid;
+            grid-template-columns: 40px 2fr auto auto auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .book-header:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            user-select: none;
+        }
+
+        .drag-handle:hover {
+            color: #667eea;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .book-title {
+            font-weight: 500;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .book-title.completed {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .book-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-ring {
+            width: 32px;
+            height: 32px;
+        }
+
+        .progress-ring__circle-bg {
+            stroke: #e0e0e0;
+            stroke-width: 4;
+            fill: transparent;
+        }
+
+        .progress-ring__circle {
+            stroke: #667eea;
+            stroke-width: 4;
+            stroke-linecap: round;
+            fill: transparent;
+            transition: stroke-dashoffset 0.3s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .book-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-complete-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-complete-btn.completed {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .toggle-complete-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .delete-book-btn {
+            background: transparent;
+            color: #999;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .delete-book-btn:hover {
+            background: #fee;
+            color: #ff6b6b;
+        }
+
+        .completed-date {
+            font-size: 11px;
+            color: #4caf50;
+            padding: 4px 8px;
+            background: #e8f5e9;
+            border-radius: 4px;
+        }
+
+        /* 章节列表 */
+        .chapters-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .chapters-container.expanded {
+            max-height: 1000px;
+        }
+
+        .chapters-list {
+            padding: 0 15px 15px 95px;
+            background: #fafafa;
+            border-top: 1px solid #eee;
+        }
+
+        .chapter-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .chapter-item:hover {
+            background: #f5f5f5;
+        }
+
+        .chapter-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #4caf50;
+        }
+
+        .chapter-number {
+            font-size: 13px;
+            color: #999;
+            min-width: 60px;
+        }
+
+        .chapter-name {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .chapter-name.completed {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .chapter-date {
+            font-size: 11px;
+            color: #4caf50;
+            padding: 2px 6px;
+            background: #e8f5e9;
+            border-radius: 4px;
+        }
+
+        .chapter-delete {
+            background: transparent;
+            color: #ccc;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .chapter-delete:hover {
+            background: #fee;
+            color: #ff6b6b;
+        }
+
+        /* 添加章节表单 */
+        .add-chapter-form {
+            display: flex;
+            gap: 10px;
+            padding: 12px 12px 12px 95px;
+            background: #f0f0f0;
+            border-top: 1px solid #ddd;
+        }
+
+        .add-chapter-form input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-chapter-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .add-chapter-form input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-chapter-form input[type="text"].chapter-number {
+            flex: 1;
+            min-width: 60px;
+        }
+
+        .add-chapter-form input[type="text"]:not(.chapter-number) {
+            flex: 7;
+        }
+
+        .add-chapter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s ease;
+        }
+
+        .add-chapter-btn:hover {
+            background: #5568d3;
+        }
+
+        /* 添加书籍表单 */
+        .add-book-form {
+            display: grid;
+            grid-template-columns: 2fr auto;
+            gap: 10px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px dashed #ddd;
+        }
+
+        .add-book-form input {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-book-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .add-book-form button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+
+        .add-book-form button:hover {
+            background: #5568d3;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        /* 确认弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .modal-message {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn.cancel {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .modal-btn.cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .modal-btn.confirm {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .modal-btn.confirm:hover {
+            background: #ee5a5a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 读书记录</h1>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">总书籍</div>
+                    <div class="stat-value" id="totalBooks">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">已完成</div>
+                    <div class="stat-value" id="completedBooks">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件状态 -->
+        <div id="statusIndicator" class="status-indicator disconnected">
+            未连接数据文件
+        </div>
+        <button id="selectFileBtn" class="select-file-btn" onclick="selectDataFile()">
+            选择 reading.json 文件
+        </button>
+
+        <!-- 书籍列表 -->
+        <div id="booksList" class="books-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">📖</div>
+                <div>暂无书籍，请添加新书籍</div>
+            </div>
+        </div>
+
+        <!-- 添加新书籍 -->
+        <div class="add-book-form">
+            <input type="text" id="newBookTitle" placeholder="输入书籍名称" />
+            <button onclick="addBook()">添加书籍</button>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-title">确认删除</div>
+            <div class="modal-message">
+                确定要删除这本书及其所有章节吗？<br>
+                数据将被标记为删除状态，不会再显示在列表中。
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeDeleteModal()">取消</button>
+                <button class="modal-btn confirm" onclick="confirmDeleteBook()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_NAME = 'ReadingTrackerDB';
+        const STORE_NAME = 'fileHandles';
+        const DEFAULT_FILENAME = 'reading.json';
+        let readingData = { books: [] };
+        let fileHandle = null;
+        let isFileConnected = false;
+        let draggedIndex = null;
+        let bookToDelete = null;
+        let expandedBookIds = new Set();
+
+        // IndexedDB 辅助函数
+        const dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onerror = () => reject(request.error);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME);
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+        });
+
+        async function getFileHandleFromDB() {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(DEFAULT_FILENAME);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveFileHandleToDB(handle) {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(handle, DEFAULT_FILENAME);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // 更新状态指示器
+        function updateStatus(status, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const selectBtn = document.getElementById('selectFileBtn');
+            indicator.textContent = message;
+            indicator.className = 'status-indicator ' + status;
+
+            if (status === 'connected') {
+                selectBtn.style.display = 'none';
+            } else {
+                selectBtn.style.display = 'block';
+            }
+        }
+
+        // 选择数据文件
+        async function selectDataFile() {
+            try {
+                if (!window.showOpenFilePicker) {
+                    alert('您的浏览器不支持文件访问功能，请使用 Chrome 或 Edge 浏览器。');
+                    return;
+                }
+
+                const handles = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'JSON 文件',
+                        accept: { 'application/json': ['.json'] }
+                    }],
+                    multiple: false
+                });
+                fileHandle = handles[0];
+
+                await saveFileHandleToDB(fileHandle);
+                await loadFromFile();
+                updateStatus('connected', '已连接: ' + fileHandle.name);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('选择文件失败:', err);
+                    updateStatus('error', '选择文件失败: ' + err.message);
+                }
+            }
+        }
+
+        // 从文件加载数据
+        async function loadFromFile() {
+            try {
+                const file = await fileHandle.getFile();
+                const text = await file.text();
+                const data = JSON.parse(text);
+
+                if (data.books && Array.isArray(data.books)) {
+                    readingData = data;
+                } else if (Array.isArray(data)) {
+                    // 兼容旧格式
+                    readingData = { books: data };
+                } else {
+                    throw new Error('文件格式不正确');
+                }
+
+                isFileConnected = true;
+                updateUI();
+            } catch (err) {
+                console.error('读取文件失败:', err);
+                throw err;
+            }
+        }
+
+        // 保存数据到文件
+        async function saveToFile() {
+            if (!fileHandle) return;
+
+            try {
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(readingData, null, 2));
+                await writable.close();
+                console.log('数据已保存到:', fileHandle.name);
+            } catch (err) {
+                console.error('保存文件失败:', err);
+                throw err;
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.showOpenFilePicker) {
+                try {
+                    const savedHandle = await getFileHandleFromDB();
+                    if (savedHandle) {
+                        const permission = await savedHandle.queryPermission({ mode: 'readwrite' });
+                        if (permission === 'granted') {
+                            fileHandle = savedHandle;
+                            await loadFromFile();
+                            updateStatus('connected', '已连接: ' + fileHandle.name);
+                        } else {
+                            updateStatus('disconnected', '需要重新授权访问文件');
+                        }
+                    }
+                } catch (err) {
+                    console.error('恢复文件句柄失败:', err);
+                    updateStatus('disconnected', '需要选择数据文件');
+                }
+            } else {
+                updateStatus('error', '您的浏览器不支持文件访问，请使用 Chrome 或 Edge');
+            }
+
+            updateUI();
+        });
+
+        // 获取数据
+        function getData() {
+            return readingData;
+        }
+
+        // 保存数据
+        async function saveData(data) {
+            readingData = data;
+            if (isFileConnected) {
+                await saveToFile();
+            }
+        }
+
+        // 获取未删除的书籍
+        function getActiveBooks() {
+            return getData().books.filter(b => !b.deleted);
+        }
+
+        // 添加书籍
+        async function addBook() {
+            const input = document.getElementById('newBookTitle');
+            const title = input.value.trim();
+
+            if (!title) {
+                alert('请输入书籍名称');
+                return;
+            }
+
+            const data = getData();
+            data.books.push({
+                id: Date.now(),
+                title: title,
+                completed: false,
+                completedDate: null,
+                deleted: false,
+                chapters: []
+            });
+
+            await saveData(data);
+            updateUI();
+
+            input.value = '';
+        }
+
+        // 删除书籍（软删除）
+        function showDeleteModal(bookId) {
+            bookToDelete = bookId;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            bookToDelete = null;
+            document.getElementById('deleteModal').classList.remove('active');
+        }
+
+        async function confirmDeleteBook() {
+            if (!bookToDelete) return;
+
+            const data = getData();
+            const book = data.books.find(b => b.id === bookToDelete);
+            if (book) {
+                book.deleted = true;
+                await saveData(data);
+                updateUI();
+            }
+
+            closeDeleteModal();
+        }
+
+        // 切换书籍完成状态
+        async function toggleBookComplete(bookId) {
+            const data = getData();
+            const book = data.books.find(b => b.id === bookId);
+            if (!book) return;
+
+            book.completed = !book.completed;
+            if (book.completed) {
+                book.completedDate = new Date().toISOString().split('T')[0];
+            } else {
+                book.completedDate = null;
+            }
+
+            await saveData(data);
+            updateUI();
+        }
+
+        // 切换章节完成状态
+        async function toggleChapterComplete(bookId, chapterId) {
+            const data = getData();
+            const book = data.books.find(b => b.id === bookId);
+            if (!book) return;
+
+            const chapter = book.chapters.find(c => c.id === chapterId);
+            if (!chapter) return;
+
+            chapter.completed = !chapter.completed;
+            if (chapter.completed) {
+                chapter.completedDate = new Date().toISOString().split('T')[0];
+            } else {
+                chapter.completedDate = null;
+            }
+
+            // 检查是否所有章节都完成了
+            const allCompleted = book.chapters.length > 0 && book.chapters.every(c => c.completed);
+            book.completed = allCompleted;
+            book.completedDate = allCompleted ? new Date().toISOString().split('T')[0] : null;
+
+            await saveData(data);
+            updateUI();
+        }
+
+        // 添加章节
+        async function addChapter(bookId, number, name) {
+            const data = getData();
+            const book = data.books.find(b => b.id === bookId);
+            if (!book) return;
+
+            // 如果书已完成，添加新章节时取消书的完成状态
+            if (book.completed) {
+                book.completed = false;
+                book.completedDate = null;
+            }
+
+            book.chapters.push({
+                id: Date.now(),
+                number: number,
+                name: name,
+                completed: false,
+                completedDate: null
+            });
+
+            await saveData(data);
+            updateUI();
+        }
+
+        // 删除章节
+        async function deleteChapter(bookId, chapterId) {
+            if (!confirm('确定要删除这个章节吗？')) return;
+
+            const data = getData();
+            const book = data.books.find(b => b.id === bookId);
+            if (!book) return;
+
+            book.chapters = book.chapters.filter(c => c.id !== chapterId);
+
+            // 检查是否所有章节都完成了
+            const allCompleted = book.chapters.length > 0 && book.chapters.every(c => c.completed);
+            book.completed = allCompleted;
+            book.completedDate = allCompleted ? new Date().toISOString().split('T')[0] : null;
+
+            await saveData(data);
+            updateUI();
+        }
+
+        // 切换折叠
+        function toggleBookCollapse(bookId) {
+            const container = document.getElementById(`chapters-${bookId}`);
+            container.classList.toggle('expanded');
+
+            // 更新展开状态记录
+            if (container.classList.contains('expanded')) {
+                expandedBookIds.add(bookId);
+            } else {
+                expandedBookIds.delete(bookId);
+            }
+        }
+
+        // 拖拽开始
+        function handleDragStart(e, index) {
+            draggedIndex = index;
+            e.target.closest('.book-item').classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        // 拖拽结束
+        function handleDragEnd(e) {
+            e.target.closest('.book-item')?.classList.remove('dragging');
+            document.querySelectorAll('.book-item').forEach(row => row.classList.remove('drag-over'));
+            draggedIndex = null;
+        }
+
+        // 拖拽经过
+        function handleDragOver(e) {
+            e.preventDefault();
+            const targetRow = e.target.closest('.book-item');
+            if (targetRow) {
+                document.querySelectorAll('.book-item').forEach(row => row.classList.remove('drag-over'));
+                targetRow.classList.add('drag-over');
+            }
+        }
+
+        // 放置
+        async function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+            const activeBooks = getActiveBooks();
+            const data = getData();
+
+            // 找到原始索引
+            const sourceBook = activeBooks[draggedIndex];
+            const sourceIndex = data.books.indexOf(sourceBook);
+            const targetBook = activeBooks[targetIndex];
+            const targetArrayIndex = data.books.indexOf(targetBook);
+
+            const [movedBook] = data.books.splice(sourceIndex, 1);
+            data.books.splice(targetArrayIndex, 0, movedBook);
+
+            await saveData(data);
+            updateUI();
+        }
+
+        // 计算书籍进度
+        function calculateBookProgress(book) {
+            const total = book.chapters.length;
+            const completed = book.chapters.filter(c => c.completed).length;
+            return { completed, total, percentage: total > 0 ? completed / total : 0 };
+        }
+
+        // 生成进度环 SVG
+        function generateProgressRing(percentage) {
+            const radius = 14;
+            const circumference = radius * 2 * Math.PI;
+            const offset = circumference - percentage * circumference;
+            return `
+                <svg class="progress-ring">
+                    <circle
+                        class="progress-ring__circle-bg"
+                        r="${radius}"
+                        cx="16"
+                        cy="16"
+                    />
+                    <circle
+                        class="progress-ring__circle"
+                        r="${radius}"
+                        cx="16"
+                        cy="16"
+                        stroke-dasharray="${circumference} ${circumference}"
+                        stroke-dashoffset="${offset}"
+                    />
+                </svg>
+            `;
+        }
+
+        // 更新UI
+        function updateUI() {
+            renderBooksList();
+            updateStats();
+        }
+
+        // 更新统计
+        function updateStats() {
+            const books = getActiveBooks();
+            document.getElementById('totalBooks').textContent = books.length;
+            document.getElementById('completedBooks').textContent = books.filter(b => b.completed).length;
+        }
+
+        // 渲染书籍列表
+        function renderBooksList() {
+            const books = getActiveBooks();
+            const container = document.getElementById('booksList');
+
+            if (books.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📖</div>
+                        <div>暂无书籍，请添加新书籍</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = books.map((book, index) => {
+                const progress = calculateBookProgress(book);
+                return `
+                    <div class="book-item"
+                         draggable="true"
+                         ondragstart="handleDragStart(event, ${index})"
+                         ondragend="handleDragEnd(event)"
+                         ondragover="handleDragOver(event)"
+                         ondrop="handleDrop(event, ${index})">
+                        <div class="book-header" onclick="toggleBookCollapse(${book.id})">
+                            <div class="drag-handle">⋮⋮</div>
+                            <div class="book-title ${book.completed ? 'completed' : ''}">${book.title}</div>
+                            <div class="book-progress">
+                                ${generateProgressRing(progress.percentage)}
+                                <span>${progress.completed}/${progress.total}</span>
+                            </div>
+                            <div class="book-actions">
+                                ${book.completedDate ? `<span class="completed-date">${formatDate(book.completedDate)} 完成</span>` : ''}
+                                <button class="toggle-complete-btn ${book.completed ? 'completed' : ''}"
+                                        onclick="event.stopPropagation(); toggleBookComplete(${book.id})">
+                                    ${book.completed ? '取消完成' : '标记完成'}
+                                </button>
+                                <button class="delete-book-btn"
+                                        onclick="event.stopPropagation(); showDeleteModal(${book.id})">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chapters-container ${expandedBookIds.has(book.id) ? 'expanded' : ''}" id="chapters-${book.id}">
+                            <div class="chapters-list">
+                                ${book.chapters.length === 0 ? '<div style="color: #999; font-size: 13px; padding: 10px 0;">暂无章节</div>' : ''}
+                                ${book.chapters.map(chapter => `
+                                    <div class="chapter-item">
+                                        <input type="checkbox"
+                                               class="chapter-checkbox"
+                                               ${chapter.completed ? 'checked' : ''}
+                                               onclick="toggleChapterComplete(${book.id}, ${chapter.id})" />
+                                        <span class="chapter-number">${chapter.number}</span>
+                                        <span class="chapter-name ${chapter.completed ? 'completed' : ''}">${chapter.name}</span>
+                                        ${chapter.completedDate ? `<span class="chapter-date">${formatDate(chapter.completedDate)}</span>` : ''}
+                                        <button class="chapter-delete" onclick="deleteChapter(${book.id}, ${chapter.id})">×</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="add-chapter-form">
+                                <input type="text"
+                                       class="chapter-number"
+                                       id="chapterNumber-${book.id}"
+                                       placeholder="章节号"
+                                       onkeypress="if(event.key === 'Enter') addChapterFromInput(${book.id})" />
+                                <input type="text"
+                                       id="chapterName-${book.id}"
+                                       placeholder="章节名称"
+                                       onkeypress="if(event.key === 'Enter') addChapterFromInput(${book.id})" />
+                                <button class="add-chapter-btn" onclick="addChapterFromInput(${book.id})">添加章节</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 从输入框添加章节
+        function addChapterFromInput(bookId) {
+            // 确保当前书籍保持展开状态
+            expandedBookIds.add(bookId);
+
+            const numberInput = document.getElementById(`chapterNumber-${bookId}`);
+            const nameInput = document.getElementById(`chapterName-${bookId}`);
+
+            const number = numberInput.value.trim();
+            const name = nameInput.value.trim();
+
+            if (!number) {
+                alert('请输入章节号');
+                return;
+            }
+
+            if (!name) {
+                alert('请输入章节名称');
+                return;
+            }
+
+            addChapter(bookId, number, name);
+
+            numberInput.value = '';
+            nameInput.value = '';
+            numberInput.focus();
+        }
+
+        // 格式化日期
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+        }
+
+        // 支持回车键添加书籍
+        document.getElementById('newBookTitle').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addBook();
+            }
+        });
+
+        // 点击弹窗外部关闭
+        document.getElementById('deleteModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deleteModal') {
+                closeDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html>

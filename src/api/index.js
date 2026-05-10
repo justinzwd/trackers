@@ -155,3 +155,79 @@ export async function reorderBonusItems(items) {
     body: JSON.stringify({ items }),
   })
 }
+
+// ============ 读书记录相关 API ============
+
+// 获取所有书籍及其章节
+export async function getReadingBooks() {
+  return apiRequest(`/reading`)
+}
+
+// 获取书籍列表（不含章节）
+export async function getReadingBooksList() {
+  return apiRequest(`/reading?action=books`)
+}
+
+// 获取某本书的章节
+export async function getReadingChapters(bookId) {
+  return apiRequest(`/reading?action=chapters&bookId=${bookId}`)
+}
+
+// 获取统计数据
+export async function getReadingStats() {
+  return apiRequest(`/reading?action=stats`)
+}
+
+// 添加书籍
+export async function addReadingBook(title, sortOrder = 0) {
+  return apiRequest(`/reading`, {
+    method: 'POST',
+    body: JSON.stringify({ title, sortOrder }),
+  })
+}
+
+// 添加章节
+export async function addReadingChapter(bookId, chapterNumber, chapterName) {
+  return apiRequest(`/reading?action=chapter`, {
+    method: 'POST',
+    body: JSON.stringify({ bookId, chapterNumber, chapterName }),
+  })
+}
+
+// 切换书籍完成状态
+export async function toggleReadingBook(bookId, completed) {
+  return apiRequest(`/reading?action=toggle-book`, {
+    method: 'PUT',
+    body: JSON.stringify({ bookId, completed }),
+  })
+}
+
+// 切换章节完成状态
+export async function toggleReadingChapter(bookId, chapterId, completed) {
+  return apiRequest(`/reading?action=toggle-chapter`, {
+    method: 'PUT',
+    body: JSON.stringify({ bookId, chapterId, completed }),
+  })
+}
+
+// 删除书籍
+export async function deleteReadingBook(bookId) {
+  return apiRequest(`/reading/${bookId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 删除章节
+export async function deleteReadingChapter(bookId, chapterId) {
+  return apiRequest(`/reading?action=chapter&id=${chapterId}&bookId=${bookId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 重新排序书籍
+export async function reorderReadingBooks(books) {
+  return apiRequest(`/reading?action=reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ books }),
+  })
+}

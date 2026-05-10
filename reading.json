@@ -1,0 +1,77 @@
+{
+  "books": [
+    {
+      "id": 1778162805706,
+      "title": "Efficient Go",
+      "completed": false,
+      "completedDate": null,
+      "deleted": false,
+      "chapters": [
+        {
+          "id": 1778162851497,
+          "number": "4",
+          "name": "How Go Uses the CPU Resource",
+          "completed": true,
+          "completedDate": "2026-05-07"
+        },
+        {
+          "id": 1778162878366,
+          "number": "5",
+          "name": "How Go Uses Memory Resource",
+          "completed": false,
+          "completedDate": null
+        },
+        {
+          "id": 1778163204279,
+          "number": "6",
+          "name": "Efficiency Observability",
+          "completed": true,
+          "completedDate": "2026-05-07"
+        },
+        {
+          "id": 1778163600265,
+          "number": "7",
+          "name": "Data-Driven Efficiency Assessment",
+          "completed": false,
+          "completedDate": null
+        },
+        {
+          "id": 1778163612043,
+          "number": "8",
+          "name": "Benchmarking",
+          "completed": false,
+          "completedDate": null
+        },
+        {
+          "id": 1778163672611,
+          "number": "9",
+          "name": "Data-Driven Bottleneck Analysis",
+          "completed": true,
+          "completedDate": "2026-05-07"
+        },
+        {
+          "id": 1778163686669,
+          "number": "10",
+          "name": "Optimization Examples",
+          "completed": false,
+          "completedDate": null
+        },
+        {
+          "id": 1778163699434,
+          "number": "11",
+          "name": "Optimization Patterns",
+          "completed": false,
+          "completedDate": null
+        }
+      ]
+    },
+    {
+      "id": 1778163790615,
+      "title": "book1",
+      "completed": false,
+      "completedDate": null,
+      "deleted": true,
+      "chapters": []
+    }
+  ]
+}

@@ -2,6 +2,9 @@
 
 一个基于 React + Cloudflare Workers + D1 的工具集网页应用，支持数据持久化到关系型数据库。
 
+todo
+[] 有几张表的 id 自增主键太大了(可以看 sqlite_sequence 这张表)，在插入数据的时候注意id，并且修改已有的数据以及外键
+
 ## 技术栈
 
 - **前端**: React 18 + Vite + React Router

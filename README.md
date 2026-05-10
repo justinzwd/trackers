@@ -193,7 +193,17 @@ npm run db:local
 
 代码更新后，要将变更部署到生产环境供所有人访问，按照以下步骤操作：
 
-### 步骤 1：提交代码更改
+### ⚠️ 前置操作：关闭 GitHub 自动部署（如果已配置）
+
+如果你之前在 Cloudflare Pages 绑定了 GitHub，需要先关闭自动部署，否则会和手动部署冲突：
+
+1. 进入 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 选择 **Workers & Pages** → 找到你的 Pages 项目
+3. 点击项目 → **Settings** → **Build & deployments**
+4. 找到 **Continuous Integration** 部分，选择 **None** 或删除 GitHub 集成
+5. 或者直接删除整个 Pages 项目，重新创建
+
+### 步骤 1：提交代码更改（本地保存）
 
 ```bash
 # 查看修改内容
@@ -202,12 +212,14 @@ git status
 # 添加所有修改
 git add .
 
-# 提交代码
+# 提交代码（可选，用于本地版本管理）
 git commit -m "feat: 描述你的更改内容"
 
-# 推送到远程仓库
+# 如需推送到远程仓库备份
 git push
 ```
+
+**注意**：手动部署不需要推送代码到 GitHub，推送只是为了本地备份。
 
 ### 步骤 2：部署后端 Workers API
 
@@ -266,7 +278,9 @@ wrangler pages deploy dist --project-name=trackers-app
    curl https://trackers-api.your-account.workers.dev/api/water
 
    # 添加测试记录
-   curl -X POST https://trackers-api.your-account.workers.dev/api/water \n     -H "Content-Type: application/json" \n     -d '{"amount": 100}'
+  curl -X POST https://trackers-api.your-account.workers.dev/api/water \
+    -H "Content-Type: application/json" \
+    -d '{"amount": 100}'
    ```
 
 2. **验证前端**：
@@ -283,6 +297,10 @@ wrangler pages deploy dist --project-name=trackers-app
 4. 按照指引配置 DNS 记录
 
 **配置 Workers 自定义域名**：
+
+1. 进入 Cloudflare Dashboard → Workers
+2. 选择 `trackers-api` → Triggers
+3. 添加自定义域名
 
 ## 部署检查清单
 
@@ -326,13 +344,6 @@ A: 确认：
 1. API 路径正确（`/api/water`）
 2. Workers URL 正确
 3. 路由在 `worker/index.js` 中已定义
-
-## 注意事项
-
-1. **国内访问**: 使用 Cloudflare CDN 全球加速，国内访问基本稳定
-2. **数据备份**: D1 数据建议定期备份
-3. **速率限制**: 超过免费额度可能需要付费
-4. **API 跨域**: Workers 默认支持跨域请求
 
 ## 添加新工具
 

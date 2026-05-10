@@ -105,12 +105,13 @@ function WaterTracker() {
 
   function getTodayString() {
     const today = new Date()
-    return today.toLocaleDateString('zh-CN', {
+    const dateStr = today.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      weekday: 'long',
     })
+    const weekday = today.toLocaleDateString('zh-CN', { weekday: 'long' })
+    return `${dateStr} ${weekday}`
   }
 
   return (

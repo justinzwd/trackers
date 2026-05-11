@@ -19,6 +19,19 @@ function WaterTracker() {
   const canvasRef = useRef(null)
   const cacheRef = useRef(null)
   const localIdCounter = useRef(0)
+  const deletedIdsRef = useRef(new Set())
+
+  // 从 localStorage 恢复已删除的记录 ID
+  useEffect(() => {
+    try {
+      const deletedIds = localStorage.getItem('water_deleted_ids')
+      if (deletedIds) {
+        deletedIdsRef.current = new Set(JSON.parse(deletedIds))
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   useEffect(() => {
     const cache = new CacheManager('water')
@@ -68,12 +81,15 @@ function WaterTracker() {
         getWaterHistory(),
       ])
 
-      setRecords(todayRecords)
+      // 过滤掉本地已删除的记录
+      const filteredRecords = todayRecords.filter(r => !deletedIdsRef.current.has(r.id))
+
+      setRecords(filteredRecords)
       setHistory(historyData)
 
-      // 更新缓存
+      // 更新缓存（使用过滤后的数据）
       const c = cache || cacheRef.current
-      c.setData({ records: todayRecords, history: historyData })
+      c.setData({ records: filteredRecords, history: historyData })
 
       setStatus('connected')
       setStatusMessage('已连接到服务器')
@@ -115,6 +131,14 @@ function WaterTracker() {
 
     // 更新缓存
     cacheRef.current.setData({ records: newRecords, history })
+
+    // 保存删除的 ID 到 localStorage
+    deletedIdsRef.current.add(recordId)
+    try {
+      localStorage.setItem('water_deleted_ids', JSON.stringify([...deletedIdsRef.current]))
+    } catch (e) {
+      // ignore
+    }
 
     // 只有真实 id 才入队列（负数是本地临时 id）
     if (recordId > 0) {

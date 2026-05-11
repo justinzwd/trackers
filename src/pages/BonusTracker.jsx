@@ -15,6 +15,24 @@ function BonusTracker() {
   const [draggedIndex, setDraggedIndex] = useState(null)
   const cacheRef = useRef(null)
   const localIdCounter = useRef(0)
+  const deletedItemIdsRef = useRef(new Set())
+  const deletedHistoryIdsRef = useRef(new Set())
+
+  // 从 localStorage 恢复已删除的 ID
+  useEffect(() => {
+    try {
+      const deletedItemIds = localStorage.getItem('bonus_deleted_item_ids')
+      const deletedHistoryIds = localStorage.getItem('bonus_deleted_history_ids')
+      if (deletedItemIds) {
+        deletedItemIdsRef.current = new Set(JSON.parse(deletedItemIds))
+      }
+      if (deletedHistoryIds) {
+        deletedHistoryIdsRef.current = new Set(JSON.parse(deletedHistoryIds))
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   useEffect(() => {
     const cache = new CacheManager('bonus')
@@ -43,12 +61,16 @@ function BonusTracker() {
       setStatusMessage('正在同步...')
       const data = await getBonusData()
 
-      setItems(data.items || [])
-      setHistory(data.history || [])
+      // 过滤掉本地已删除的项目和历史记录
+      const filteredItems = (data.items || []).filter(i => !deletedItemIdsRef.current.has(i.id))
+      const filteredHistory = (data.history || []).filter(h => !deletedHistoryIdsRef.current.has(h.id))
+
+      setItems(filteredItems)
+      setHistory(filteredHistory)
       setTotal(data.total || 0)
 
       const c = cache || cacheRef.current
-      c.setData({ items: data.items || [], history: data.history || [], total: data.total || 0 })
+      c.setData({ items: filteredItems, history: filteredHistory, total: data.total || 0 })
 
       setStatus('connected')
       setStatusMessage('已连接到服务器')
@@ -110,6 +132,14 @@ function BonusTracker() {
 
     cacheRef.current.setData({ items: newItems, history: newHistory, total: newTotal })
 
+    // 保存删除的项目 ID 到 localStorage
+    deletedItemIdsRef.current.add(itemId)
+    try {
+      localStorage.setItem('bonus_deleted_item_ids', JSON.stringify([...deletedItemIdsRef.current]))
+    } catch (e) {
+      // ignore
+    }
+
     if (itemId > 0) {
       cacheRef.current.addOperation({ type: 'deleteItem', payload: { id: itemId } })
     }
@@ -132,6 +162,14 @@ function BonusTracker() {
     setItems(newItems)
 
     cacheRef.current.setData({ items: newItems, history: newHistory, total: newTotal })
+
+    // 保存删除的历史记录 ID 到 localStorage
+    deletedHistoryIdsRef.current.add(recordId)
+    try {
+      localStorage.setItem('bonus_deleted_history_ids', JSON.stringify([...deletedHistoryIdsRef.current]))
+    } catch (e) {
+      // ignore
+    }
 
     if (recordId > 0) {
       cacheRef.current.addOperation({ type: 'deleteHistory', payload: { id: recordId } })

@@ -15,6 +15,24 @@ function OkrTracker() {
   const [recordsLoading, setRecordsLoading] = useState(false)
   const cacheRef = useRef(null)
   const localIdCounter = useRef(0)
+  const deletedGoalIdsRef = useRef(new Set())
+  const deletedRecordIdsRef = useRef(new Set())
+
+  // 从 localStorage 恢复已删除的 ID
+  useEffect(() => {
+    try {
+      const deletedGoalIds = localStorage.getItem('okr_deleted_goal_ids')
+      const deletedRecordIds = localStorage.getItem('okr_deleted_record_ids')
+      if (deletedGoalIds) {
+        deletedGoalIdsRef.current = new Set(JSON.parse(deletedGoalIds))
+      }
+      if (deletedRecordIds) {
+        deletedRecordIdsRef.current = new Set(JSON.parse(deletedRecordIds))
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   useEffect(() => {
     const cache = new CacheManager('okr')
@@ -40,10 +58,14 @@ function OkrTracker() {
       setStatus('loading')
       setStatusMessage('正在同步...')
       const data = await getOkrGoals()
-      setGoals(data.goals || [])
+
+      // 过滤掉本地已删除的目标
+      const filteredGoals = (data.goals || []).filter(g => !deletedGoalIdsRef.current.has(g.id))
+
+      setGoals(filteredGoals)
 
       const c = cache || cacheRef.current
-      c.setData({ goals: data.goals || [] })
+      c.setData({ goals: filteredGoals })
 
       setStatus('connected')
       setStatusMessage('已连接到服务器')
@@ -57,7 +79,9 @@ function OkrTracker() {
     try {
       setRecordsLoading(true)
       const data = await getOkrRecords(goalId)
-      setRecords(data)
+      // 过滤掉本地已删除的记录
+      const filteredRecords = data.filter(r => !deletedRecordIdsRef.current.has(r.id))
+      setRecords(filteredRecords)
     } catch (error) {
       setRecords([])
     } finally {
@@ -141,6 +165,14 @@ function OkrTracker() {
 
     cacheRef.current.setData({ goals: newGoals })
 
+    // 保存删除的 ID 到 localStorage
+    deletedGoalIdsRef.current.add(goalId)
+    try {
+      localStorage.setItem('okr_deleted_goal_ids', JSON.stringify([...deletedGoalIdsRef.current]))
+    } catch (e) {
+      // ignore
+    }
+
     if (goalId > 0) {
       cacheRef.current.addOperation({ type: 'deleteGoal', payload: { goalId } })
     }
@@ -162,6 +194,14 @@ function OkrTracker() {
       )
       setGoals(newGoals)
       cacheRef.current.setData({ goals: newGoals })
+    }
+
+    // 保存删除的记录 ID 到 localStorage
+    deletedRecordIdsRef.current.add(recordId)
+    try {
+      localStorage.setItem('okr_deleted_record_ids', JSON.stringify([...deletedRecordIdsRef.current]))
+    } catch (e) {
+      // ignore
     }
 
     if (recordId > 0) {

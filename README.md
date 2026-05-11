@@ -10,9 +10,8 @@ https://dash.cloudflare.com/f6aa285a8ab42aab882444b9ab2885a1/workers-and-pages
 
 todo
 [x] 有几张表的 id 自增主键太大了(可以看 sqlite_sequence 这张表)，在插入数据的时候注意id，并且修改已有的数据以及外键
-[] 加缓存，在退出页面前强制将数据持久化到远程数据库
+[x] 加缓存，在退出页面前强制将数据持久化到远程数据库
 [x] functions 文件夹有什么作用，为什么子文件夹里面的文件名是 [id].js 呢？
-[] 目标页，删除键还是不能用
 
 ## 技术栈
 

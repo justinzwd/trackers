@@ -13,6 +13,19 @@ import { useEffect, useState, useRef } from 'react'
     const [spentInput, setSpentInput] = useState('')
     const cacheRef = useRef(null)
     const localIdCounter = useRef(0)
+    const deletedRecordIdsRef = useRef(new Set())
+
+    // 从 localStorage 恢复已删除的记录 ID
+    useEffect(() => {
+      try {
+        const deletedRecordIds = localStorage.getItem('dinner_deleted_record_ids')
+        if (deletedRecordIds) {
+          deletedRecordIdsRef.current = new Set(JSON.parse(deletedRecordIds))
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, [])
 
     useEffect(() => {
       const cache = new CacheManager('dinner')
@@ -38,10 +51,14 @@ import { useEffect, useState, useRef } from 'react'
         setStatus('loading')
         setStatusMessage('正在同步...')
         const allRecords = await getAllDinnerRecords()
-        setRecords(allRecords)
+
+        // 过滤掉本地已删除的记录
+        const filteredRecords = allRecords.filter(r => !deletedRecordIdsRef.current.has(r.id))
+
+        setRecords(filteredRecords)
 
         const c = cache || cacheRef.current
-        c.setData({ records: allRecords })
+        c.setData({ records: filteredRecords })
 
         setStatus('connected')
         setStatusMessage('已连接到服务器')
@@ -83,6 +100,14 @@ import { useEffect, useState, useRef } from 'react'
       setRecords(newRecords)
 
       cacheRef.current.setData({ records: newRecords })
+
+      // 保存删除的记录 ID 到 localStorage
+      deletedRecordIdsRef.current.add(recordId)
+      try {
+        localStorage.setItem('dinner_deleted_record_ids', JSON.stringify([...deletedRecordIdsRef.current]))
+      } catch (e) {
+        // ignore
+      }
 
       if (recordId > 0) {
         cacheRef.current.addOperation({ type: 'delete', payload: { id: recordId } })

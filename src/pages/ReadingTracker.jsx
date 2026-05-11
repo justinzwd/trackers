@@ -16,6 +16,24 @@ function ReadingTracker() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const cacheRef = useRef(null)
   const localIdCounter = useRef(0)
+  const deletedBookIdsRef = useRef(new Set())
+  const deletedChapterIdsRef = useRef(new Set())
+
+  // 从 localStorage 恢复已删除的 ID
+  useEffect(() => {
+    try {
+      const deletedBookIds = localStorage.getItem('reading_deleted_book_ids')
+      const deletedChapterIds = localStorage.getItem('reading_deleted_chapter_ids')
+      if (deletedBookIds) {
+        deletedBookIdsRef.current = new Set(JSON.parse(deletedBookIds))
+      }
+      if (deletedChapterIds) {
+        deletedChapterIdsRef.current = new Set(JSON.parse(deletedChapterIds))
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
 
   useEffect(() => {
     const cache = new CacheManager('reading')
@@ -47,11 +65,14 @@ function ReadingTracker() {
         getReadingStats(),
       ])
 
-      setBooks(booksData)
+      // 过滤掉本地已删除的书籍
+      const filteredBooks = booksData.filter(b => !deletedBookIdsRef.current.has(b.id))
+
+      setBooks(filteredBooks)
       setStats(statsData)
 
       const c = cache || cacheRef.current
-      c.setData({ books: booksData, stats: statsData })
+      c.setData({ books: filteredBooks, stats: statsData })
 
       setStatus('connected')
       setStatusMessage('已连接到服务器')
@@ -151,6 +172,14 @@ function ReadingTracker() {
 
     updateCache(newBooks, newStats)
 
+    // 保存删除的书籍 ID 到 localStorage
+    deletedBookIdsRef.current.add(bookToDelete)
+    try {
+      localStorage.setItem('reading_deleted_book_ids', JSON.stringify([...deletedBookIdsRef.current]))
+    } catch (e) {
+      // ignore
+    }
+
     if (bookToDelete > 0) {
       cacheRef.current.addOperation({ type: 'deleteBook', payload: { bookId: bookToDelete } })
     }
@@ -248,6 +277,14 @@ function ReadingTracker() {
     setStats(newStats)
 
     updateCache(newBooks, newStats)
+
+    // 保存删除的章节 ID 到 localStorage
+    deletedChapterIdsRef.current.add(chapterId)
+    try {
+      localStorage.setItem('reading_deleted_chapter_ids', JSON.stringify([...deletedChapterIdsRef.current]))
+    } catch (e) {
+      // ignore
+    }
 
     if (chapterId > 0) {
       cacheRef.current.addOperation({ type: 'deleteChapter', payload: { bookId, chapterId } })

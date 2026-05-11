@@ -9,7 +9,10 @@ Workers and Pages
 https://dash.cloudflare.com/f6aa285a8ab42aab882444b9ab2885a1/workers-and-pages
 
 todo
-[] 有几张表的 id 自增主键太大了(可以看 sqlite_sequence 这张表)，在插入数据的时候注意id，并且修改已有的数据以及外键
+[x] 有几张表的 id 自增主键太大了(可以看 sqlite_sequence 这张表)，在插入数据的时候注意id，并且修改已有的数据以及外键
+[] 加缓存，在退出页面前强制将数据持久化到远程数据库
+[x] functions 文件夹有什么作用，为什么子文件夹里面的文件名是 [id].js 呢？
+[] 目标页，删除键还是不能用
 
 ## 技术栈
 
@@ -82,6 +85,14 @@ trackers/
 - 每个工具单独一张表，简单直接
 - 无用户概念，所有记录共享
 - 无外键关联，表结构独立
+
+之前：
+用户操作 → await API写入 → await API重新读取 → 更新UI
+
+现在：
+页面加载 → localStorage缓存秒开 → 后台远程刷新
+用户操作 → 更新state + localStorage（即时） → 操作入队列
+退出页面 → sendBeacon批量同步队列到远程DB
 
 ## 快速开始
 

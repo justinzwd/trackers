@@ -1,14 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  getBonusData,
-  addBonusItem,
-  incrementBonusCount,
-  deleteBonusItem,
-  deleteBonusHistory,
-  clearBonusHistory,
-  reorderBonusItems,
-} from '../api'
+import { getBonusData } from '../api'
+import CacheManager from '../utils/cacheManager'
 import './BonusTracker.css'
 
 function BonusTracker() {
@@ -20,78 +13,145 @@ function BonusTracker() {
   const [itemName, setItemName] = useState('')
   const [itemValue, setItemValue] = useState('')
   const [draggedIndex, setDraggedIndex] = useState(null)
+  const cacheRef = useRef(null)
+  const localIdCounter = useRef(0)
 
   useEffect(() => {
-    loadData()
+    const cache = new CacheManager('bonus')
+    cache.init()
+    cacheRef.current = cache
+
+    const cached = cache.getData()
+    if (cached) {
+      setItems(cached.items || [])
+      setHistory(cached.history || [])
+      setTotal(cached.total || 0)
+      setStatus('connected')
+      setStatusMessage('已连接到服务器')
+    }
+
+    loadRemoteData(cache)
+
+    return () => {
+      cache.destroy()
+    }
   }, [])
 
-  async function loadData() {
+  async function loadRemoteData(cache) {
     try {
       setStatus('loading')
-      setStatusMessage('正在加载数据...')
+      setStatusMessage('正在同步...')
       const data = await getBonusData()
+
       setItems(data.items || [])
       setHistory(data.history || [])
       setTotal(data.total || 0)
+
+      const c = cache || cacheRef.current
+      c.setData({ items: data.items || [], history: data.history || [], total: data.total || 0 })
+
       setStatus('connected')
       setStatusMessage('已连接到服务器')
     } catch (error) {
       setStatus('error')
-      setStatusMessage(`加载失败: ${error.message}`)
+      setStatusMessage(`同步失败: ${error.message}`)
     }
   }
 
-  async function handleIncrement(itemId) {
-    try {
-      setStatus('loading')
-      setStatusMessage('正在添加...')
-      await incrementBonusCount(itemId)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`操作失败: ${error.message}`)
+  function handleIncrement(itemId) {
+    const item = items.find(i => i.id === itemId)
+    if (!item) return
+
+    // 更新 items 中的 count
+    const newItems = items.map(i =>
+      i.id === itemId ? { ...i, count: (i.count || 0) + 1 } : i
+    )
+
+    // 添加历史记录
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
+    localIdCounter.current -= 1
+    const newHistoryItem = {
+      id: localIdCounter.current,
+      itemId: item.id,
+      itemName: item.name,
+      amount: item.value,
+      date: todayStr,
+      time: timeStr,
     }
+
+    const newHistory = [newHistoryItem, ...history]
+    const newTotal = total + item.value
+
+    setItems(newItems)
+    setHistory(newHistory)
+    setTotal(newTotal)
+
+    cacheRef.current.setData({ items: newItems, history: newHistory, total: newTotal })
+    cacheRef.current.addOperation({
+      type: 'increment',
+      payload: { itemId: item.id, itemName: item.name, itemValue: item.value },
+    })
   }
 
-  async function handleDeleteItem(itemId) {
+  function handleDeleteItem(itemId) {
     if (!confirm('确定要删除这个项目吗？')) return
-    try {
-      setStatus('loading')
-      setStatusMessage('正在删除...')
-      await deleteBonusItem(itemId)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`删除失败: ${error.message}`)
+
+    const newItems = items.filter(i => i.id !== itemId)
+    const newHistory = history.filter(h => h.itemId !== itemId)
+    const removedTotal = history.filter(h => h.itemId === itemId).reduce((sum, h) => sum + h.amount, 0)
+    const newTotal = total - removedTotal
+
+    setItems(newItems)
+    setHistory(newHistory)
+    setTotal(newTotal)
+
+    cacheRef.current.setData({ items: newItems, history: newHistory, total: newTotal })
+
+    if (itemId > 0) {
+      cacheRef.current.addOperation({ type: 'deleteItem', payload: { id: itemId } })
     }
   }
 
-  async function handleDeleteHistory(recordId) {
-    try {
-      setStatus('loading')
-      setStatusMessage('正在删除...')
-      await deleteBonusHistory(recordId)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`删除失败: ${error.message}`)
+  function handleDeleteHistory(recordId) {
+    const record = history.find(h => h.id === recordId)
+    if (!record) return
+
+    const newHistory = history.filter(h => h.id !== recordId)
+    const newTotal = total - record.amount
+
+    // 更新对应 item 的 count
+    const newItems = items.map(i =>
+      i.id === record.itemId ? { ...i, count: Math.max(0, (i.count || 0) - 1) } : i
+    )
+
+    setHistory(newHistory)
+    setTotal(newTotal)
+    setItems(newItems)
+
+    cacheRef.current.setData({ items: newItems, history: newHistory, total: newTotal })
+
+    if (recordId > 0) {
+      cacheRef.current.addOperation({ type: 'deleteHistory', payload: { id: recordId } })
     }
   }
 
-  async function handleClearHistory() {
+  function handleClearHistory() {
     if (!confirm('确定要清空所有历史记录吗？这将重置所有项目的次数为0。')) return
-    try {
-      setStatus('loading')
-      setStatusMessage('正在清空...')
-      await clearBonusHistory()
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`清空失败: ${error.message}`)
-    }
+
+    const newItems = items.map(i => ({ ...i, count: 0 }))
+
+    setHistory([])
+    setTotal(0)
+    setItems(newItems)
+
+    cacheRef.current.setData({ items: newItems, history: [], total: 0 })
+    cacheRef.current.addOperation({ type: 'clearHistory', payload: {} })
   }
 
-  async function handleAddItem() {
+  function handleAddItem() {
     const name = itemName.trim()
     const value = parseInt(itemValue)
 
@@ -104,17 +164,23 @@ function BonusTracker() {
       return
     }
 
-    try {
-      setStatus('loading')
-      setStatusMessage('正在添加...')
-      await addBonusItem(name, value)
-      await loadData()
-      setItemName('')
-      setItemValue('')
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`添加失败: ${error.message}`)
+    localIdCounter.current -= 1
+    const newItem = {
+      id: localIdCounter.current,
+      name,
+      value,
+      count: 0,
+      sort_order: items.length,
     }
+
+    const newItems = [...items, newItem]
+    setItems(newItems)
+
+    cacheRef.current.setData({ items: newItems, history, total })
+    cacheRef.current.addOperation({ type: 'addItem', payload: { name, value, sort_order: items.length } })
+
+    setItemName('')
+    setItemValue('')
   }
 
   function handleKeyPress(e) {
@@ -123,11 +189,11 @@ function BonusTracker() {
     }
   }
 
-  async function handleDragStart(index) {
+  function handleDragStart(index) {
     setDraggedIndex(index)
   }
 
-  async function handleDragOver(e, index) {
+  function handleDragOver(e, index) {
     e.preventDefault()
     if (draggedIndex === null || draggedIndex === index) return
 
@@ -139,18 +205,15 @@ function BonusTracker() {
     setDraggedIndex(index)
   }
 
-  async function handleDrop() {
+  function handleDrop() {
     if (draggedIndex === null) return
 
-    try {
-      setStatus('loading')
-      setStatusMessage('正在保存排序...')
-      await reorderBonusItems(items.map((item, i) => ({ id: item.id, sort_order: i })))
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`排序失败: ${error.message}`)
-    }
+    cacheRef.current.setData({ items, history, total })
+    cacheRef.current.addOperation({
+      type: 'reorder',
+      payload: { items: items.map((item, i) => ({ id: item.id, sort_order: i })) },
+    })
+
     setDraggedIndex(null)
   }
 
@@ -211,16 +274,13 @@ function BonusTracker() {
       <h1>🎁 Bonus 积分系统</h1>
       <div className="date-display">{getTodayString()}</div>
 
-      {/* 状态指示 */}
       <div className={`status-indicator ${status}`}>{statusMessage}</div>
 
-      {/* 总积分显示 */}
       <div className="total-display">
         <div className="total-label">总积分</div>
         <div className="total-value">{total}</div>
       </div>
 
-      {/* 表头 */}
       <div className="table-header">
         <span></span>
         <span>项目名称</span>
@@ -230,7 +290,6 @@ function BonusTracker() {
         <span></span>
       </div>
 
-      {/* 项目列表 */}
       <div className="items-list">
         {items.length === 0 ? (
           <div className="empty-state">
@@ -274,7 +333,6 @@ function BonusTracker() {
         )}
       </div>
 
-      {/* 添加新项目表单 */}
       <div className="add-form">
         <input
           type="text"
@@ -299,7 +357,6 @@ function BonusTracker() {
         </button>
       </div>
 
-      {/* 历史记录 */}
       <div className="history-section">
         <div className="history-header">
           <h2>📜 历史记录</h2>

@@ -4,6 +4,7 @@ import WaterTracker from './pages/WaterTracker'
 import DinnerTracker from './pages/DinnerTracker'
 import BonusTracker from './pages/BonusTracker'
 import ReadingTracker from './pages/ReadingTracker'
+import OkrTracker from './pages/OkrTracker'
 import './App.css'
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
       <Route path="/dinner" element={<DinnerTracker />} />
       <Route path="/bonus" element={<BonusTracker />} />
       <Route path="/reading" element={<ReadingTracker />} />
+      <Route path="/okr" element={<OkrTracker />} />
     </Routes>
   )
 }

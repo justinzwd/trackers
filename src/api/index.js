@@ -231,3 +231,45 @@ export async function reorderReadingBooks(books) {
     body: JSON.stringify({ books }),
   })
 }
+
+// ============ OKR 目标相关 API ============
+
+// 获取所有目标
+export async function getOkrGoals() {
+  return apiRequest(`/okr`)
+}
+
+// 获取目标的打卡记录
+export async function getOkrRecords(goalId) {
+  return apiRequest(`/okr?action=records&goalId=${goalId}`)
+}
+
+// 添加新目标
+export async function addOkrGoal(name, targetCount) {
+  return apiRequest(`/okr`, {
+    method: 'POST',
+    body: JSON.stringify({ name, targetCount }),
+  })
+}
+
+// 打卡 +1
+export async function incrementOkrGoal(goalId) {
+  return apiRequest(`/okr?action=increment`, {
+    method: 'POST',
+    body: JSON.stringify({ goalId }),
+  })
+}
+
+// 删除目标（软删除）
+export async function deleteOkrGoal(goalId) {
+  return apiRequest(`/okr?id=${goalId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 删除打卡记录
+export async function deleteOkrRecord(recordId) {
+  return apiRequest(`/okr?action=record&id=${recordId}`, {
+    method: 'DELETE',
+  })
+}

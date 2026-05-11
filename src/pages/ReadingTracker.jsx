@@ -1,16 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  getReadingBooks,
-  addReadingBook,
-  toggleReadingBook,
-  deleteReadingBook,
-  addReadingChapter,
-  toggleReadingChapter,
-  deleteReadingChapter,
-  reorderReadingBooks,
-  getReadingStats,
-} from '../api'
+import { getReadingBooks, getReadingStats } from '../api'
+import CacheManager from '../utils/cacheManager'
 import './ReadingTracker.css'
 
 function ReadingTracker() {
@@ -23,16 +14,33 @@ function ReadingTracker() {
   const [draggedIndex, setDraggedIndex] = useState(null)
   const [bookToDelete, setBookToDelete] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const cacheRef = useRef(null)
+  const localIdCounter = useRef(0)
 
-  // 加载数据
   useEffect(() => {
-    loadData()
+    const cache = new CacheManager('reading')
+    cache.init()
+    cacheRef.current = cache
+
+    const cached = cache.getData()
+    if (cached) {
+      setBooks(cached.books || [])
+      setStats(cached.stats || { total: 0, completed: 0 })
+      setStatus('connected')
+      setStatusMessage('已连接到服务器')
+    }
+
+    loadRemoteData(cache)
+
+    return () => {
+      cache.destroy()
+    }
   }, [])
 
-  async function loadData() {
+  async function loadRemoteData(cache) {
     try {
       setStatus('loading')
-      setStatusMessage('正在加载数据...')
+      setStatusMessage('正在同步...')
 
       const [booksData, statsData] = await Promise.all([
         getReadingBooks(),
@@ -42,15 +50,29 @@ function ReadingTracker() {
       setBooks(booksData)
       setStats(statsData)
 
+      const c = cache || cacheRef.current
+      c.setData({ books: booksData, stats: statsData })
+
       setStatus('connected')
       setStatusMessage('已连接到服务器')
     } catch (error) {
       setStatus('error')
-      setStatusMessage(`加载失败: ${error.message}`)
+      setStatusMessage(`同步失败: ${error.message}`)
     }
   }
 
-  async function handleAddBook(e) {
+  function updateCache(newBooks, newStats) {
+    cacheRef.current.setData({ books: newBooks, stats: newStats || stats })
+  }
+
+  function recalcStats(booksList) {
+    return {
+      total: booksList.length,
+      completed: booksList.filter(b => b.completed).length,
+    }
+  }
+
+  function handleAddBook(e) {
     e?.preventDefault()
     const title = newBookTitle.trim()
 
@@ -59,15 +81,25 @@ function ReadingTracker() {
       return
     }
 
-    try {
-      const sortOrder = books.length
-      await addReadingBook(title, sortOrder)
-      setNewBookTitle('')
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`添加失败: ${error.message}`)
+    localIdCounter.current -= 1
+    const newBook = {
+      id: localIdCounter.current,
+      title,
+      completed: false,
+      completedDate: null,
+      sortOrder: books.length,
+      chapters: [],
     }
+
+    const newBooks = [...books, newBook]
+    const newStats = recalcStats(newBooks)
+
+    setBooks(newBooks)
+    setStats(newStats)
+    setNewBookTitle('')
+
+    updateCache(newBooks, newStats)
+    cacheRef.current.addOperation({ type: 'addBook', payload: { title, sortOrder: books.length } })
   }
 
   function handleToggleExpand(bookId) {
@@ -82,14 +114,20 @@ function ReadingTracker() {
     })
   }
 
-  async function handleToggleBookComplete(bookId, currentCompleted) {
-    try {
-      await toggleReadingBook(bookId, !currentCompleted)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`更新失败: ${error.message}`)
-    }
+  function handleToggleBookComplete(bookId, currentCompleted) {
+    const newCompleted = !currentCompleted
+    const completedDate = newCompleted ? new Date().toISOString().split('T')[0] : null
+
+    const newBooks = books.map(b =>
+      b.id === bookId ? { ...b, completed: newCompleted, completedDate } : b
+    )
+    const newStats = recalcStats(newBooks)
+
+    setBooks(newBooks)
+    setStats(newStats)
+
+    updateCache(newBooks, newStats)
+    cacheRef.current.addOperation({ type: 'toggleBook', payload: { bookId, completed: newCompleted } })
   }
 
   function handleShowDeleteModal(bookId) {
@@ -102,20 +140,25 @@ function ReadingTracker() {
     setShowDeleteModal(false)
   }
 
-  async function handleConfirmDeleteBook() {
+  function handleConfirmDeleteBook() {
     if (!bookToDelete) return
 
-    try {
-      await deleteReadingBook(bookToDelete)
-      await loadData()
-      handleCloseDeleteModal()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`删除失败: ${error.message}`)
+    const newBooks = books.filter(b => b.id !== bookToDelete)
+    const newStats = recalcStats(newBooks)
+
+    setBooks(newBooks)
+    setStats(newStats)
+
+    updateCache(newBooks, newStats)
+
+    if (bookToDelete > 0) {
+      cacheRef.current.addOperation({ type: 'deleteBook', payload: { bookId: bookToDelete } })
     }
+
+    handleCloseDeleteModal()
   }
 
-  async function handleAddChapter(bookId, chapterNumber, chapterName) {
+  function handleAddChapter(bookId, chapterNumber, chapterName) {
     if (!chapterNumber) {
       alert('请输入章节号')
       return
@@ -125,40 +168,92 @@ function ReadingTracker() {
       return
     }
 
-    try {
-      // 保持书籍展开状态
-      setExpandedBookIds(prev => new Set([...prev, bookId]))
-      await addReadingChapter(bookId, chapterNumber, chapterName)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`添加失败: ${error.message}`)
+    localIdCounter.current -= 1
+    const newChapter = {
+      id: localIdCounter.current,
+      chapterNumber,
+      chapterName,
+      completed: false,
+      completedDate: null,
     }
+
+    const newBooks = books.map(b => {
+      if (b.id === bookId) {
+        return {
+          ...b,
+          completed: false,
+          completedDate: null,
+          chapters: [...b.chapters, newChapter],
+        }
+      }
+      return b
+    })
+    const newStats = recalcStats(newBooks)
+
+    setBooks(newBooks)
+    setStats(newStats)
+    setExpandedBookIds(prev => new Set([...prev, bookId]))
+
+    updateCache(newBooks, newStats)
+    cacheRef.current.addOperation({ type: 'addChapter', payload: { bookId, chapterNumber, chapterName } })
   }
 
-  async function handleToggleChapterComplete(bookId, chapterId, currentCompleted) {
-    try {
-      await toggleReadingChapter(bookId, chapterId, !currentCompleted)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`更新失败: ${error.message}`)
-    }
+  function handleToggleChapterComplete(bookId, chapterId, currentCompleted) {
+    const newCompleted = !currentCompleted
+    const completedDate = newCompleted ? new Date().toISOString().split('T')[0] : null
+
+    const newBooks = books.map(b => {
+      if (b.id === bookId) {
+        const newChapters = b.chapters.map(c =>
+          c.id === chapterId ? { ...c, completed: newCompleted, completedDate } : c
+        )
+        const allCompleted = newChapters.length > 0 && newChapters.every(c => c.completed)
+        return {
+          ...b,
+          chapters: newChapters,
+          completed: allCompleted,
+          completedDate: allCompleted ? new Date().toISOString().split('T')[0] : null,
+        }
+      }
+      return b
+    })
+    const newStats = recalcStats(newBooks)
+
+    setBooks(newBooks)
+    setStats(newStats)
+
+    updateCache(newBooks, newStats)
+    cacheRef.current.addOperation({ type: 'toggleChapter', payload: { bookId, chapterId, completed: newCompleted } })
   }
 
-  async function handleDeleteChapter(bookId, chapterId) {
+  function handleDeleteChapter(bookId, chapterId) {
     if (!confirm('确定要删除这个章节吗？')) return
 
-    try {
-      await deleteReadingChapter(bookId, chapterId)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`删除失败: ${error.message}`)
+    const newBooks = books.map(b => {
+      if (b.id === bookId) {
+        const newChapters = b.chapters.filter(c => c.id !== chapterId)
+        const allCompleted = newChapters.length > 0 && newChapters.every(c => c.completed)
+        return {
+          ...b,
+          chapters: newChapters,
+          completed: allCompleted,
+          completedDate: allCompleted ? new Date().toISOString().split('T')[0] : null,
+        }
+      }
+      return b
+    })
+    const newStats = recalcStats(newBooks)
+
+    setBooks(newBooks)
+    setStats(newStats)
+
+    updateCache(newBooks, newStats)
+
+    if (chapterId > 0) {
+      cacheRef.current.addOperation({ type: 'deleteChapter', payload: { bookId, chapterId } })
     }
   }
 
-  // 拖拽处理
   function handleDragStart(index) {
     setDraggedIndex(index)
   }
@@ -167,20 +262,21 @@ function ReadingTracker() {
     setDraggedIndex(null)
   }
 
-  async function handleDrop(targetIndex) {
+  function handleDrop(targetIndex) {
     if (draggedIndex === null || draggedIndex === targetIndex) return
 
     const newBooks = [...books]
     const [movedBook] = newBooks.splice(draggedIndex, 1)
     newBooks.splice(targetIndex, 0, movedBook)
 
-    try {
-      await reorderReadingBooks(newBooks)
-      await loadData()
-    } catch (error) {
-      setStatus('error')
-      setStatusMessage(`排序失败: ${error.message}`)
-    }
+    setBooks(newBooks)
+    setDraggedIndex(null)
+
+    updateCache(newBooks, stats)
+    cacheRef.current.addOperation({
+      type: 'reorder',
+      payload: { books: newBooks.map((b, i) => ({ id: b.id, sort_order: i })) },
+    })
   }
 
   function calculateBookProgress(book) {
@@ -195,24 +291,24 @@ function ReadingTracker() {
     const offset = circumference - percentage * circumference
 
     return (
-      <svg 
-        width="20" 
-        height="20" 
-        viewBox="0 0 20 20" 
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
         style={{ display: 'block', flexShrink: 0 }}
       >
         <circle r={radius} cx="10" cy="10" fill="transparent" stroke="#e0e0e0" strokeWidth="3" />
-        <circle 
-          r={radius} 
-          cx="10" 
-          cy="10" 
-          fill="transparent" 
-          stroke="#667eea" 
-          strokeWidth="3" 
+        <circle
+          r={radius}
+          cx="10"
+          cy="10"
+          fill="transparent"
+          stroke="#667eea"
+          strokeWidth="3"
           strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={offset} 
-          strokeLinecap="round" 
-          transform="rotate(-90 10 10)" 
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 10 10)"
         />
       </svg>
     )
@@ -245,10 +341,8 @@ function ReadingTracker() {
         </div>
       </div>
 
-      {/* 状态指示 */}
       <div className={`status-indicator ${status}`}>{statusMessage}</div>
 
-      {/* 书籍列表 */}
       <div className="books-list">
         {books.length === 0 ? (
           <div className="empty-state">
@@ -347,7 +441,6 @@ function ReadingTracker() {
         )}
       </div>
 
-      {/* 添加新书籍 */}
       <form className="add-book-form" onSubmit={handleAddBook}>
         <input
           type="text"
@@ -358,7 +451,6 @@ function ReadingTracker() {
         <button type="submit">添加书籍</button>
       </form>
 
-      {/* 删除确认弹窗 */}
       {showDeleteModal && (
         <div className="modal-overlay" onClick={handleCloseDeleteModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -383,7 +475,6 @@ function ReadingTracker() {
   )
 }
 
-// 添加章节表单组件
 function AddChapterForm({ bookId, onAdd }) {
   const [chapterNumber, setChapterNumber] = useState('')
   const [chapterName, setChapterName] = useState('')

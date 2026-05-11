@@ -1,10 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
   import { Link } from 'react-router-dom'
-  import {
-    getAllDinnerRecords,
-    addDinnerRecord,
-    deleteDinnerRecord,
-  } from '../api'
+  import { getAllDinnerRecords } from '../api'
+  import CacheManager from '../utils/cacheManager'
   import './DinnerTracker.css'
 
   const DAILY_BUDGET = 20
@@ -14,52 +11,81 @@ import { useEffect, useState } from 'react'
     const [status, setStatus] = useState('loading')
     const [statusMessage, setStatusMessage] = useState('正在加载数据...')
     const [spentInput, setSpentInput] = useState('')
+    const cacheRef = useRef(null)
+    const localIdCounter = useRef(0)
 
     useEffect(() => {
-      loadData()
+      const cache = new CacheManager('dinner')
+      cache.init()
+      cacheRef.current = cache
+
+      const cached = cache.getData()
+      if (cached) {
+        setRecords(cached.records || [])
+        setStatus('connected')
+        setStatusMessage('已连接到服务器')
+      }
+
+      loadRemoteData(cache)
+
+      return () => {
+        cache.destroy()
+      }
     }, [])
 
-    async function loadData() {
-        try {
-            setStatus('loading')
-            setStatusMessage('正在加载数据...')
-            const allRecords = await getAllDinnerRecords()
-            setRecords(allRecords)
-            setStatus('connected')
-            setStatusMessage('已连接到服务器')
-        } catch (error) {
-            setStatus('error')
-            setStatusMessage(`加载失败: ${error.message}`)
-        }
+    async function loadRemoteData(cache) {
+      try {
+        setStatus('loading')
+        setStatusMessage('正在同步...')
+        const allRecords = await getAllDinnerRecords()
+        setRecords(allRecords)
+
+        const c = cache || cacheRef.current
+        c.setData({ records: allRecords })
+
+        setStatus('connected')
+        setStatusMessage('已连接到服务器')
+      } catch (error) {
+        setStatus('error')
+        setStatusMessage(`同步失败: ${error.message}`)
+      }
     }
 
     function getTotalSaved() {
       return records.reduce((sum, r) => sum + r.saved, 0)
     }
 
-    async function handleAddDinner() {
+    function handleAddDinner() {
       const spent = parseFloat(spentInput)
       if (isNaN(spent) || spent < 0) {
         alert('请输入有效的花销金额')
         return
       }
-      try {
-        await addDinnerRecord(spent)
-        await loadData()
-        setSpentInput('')
-      } catch (error) {
-        setStatus('error')
-        setStatusMessage(`添加失败: ${error.message}`)
-      }
+
+      const saved = DAILY_BUDGET - spent
+      const today = new Date().toISOString().split('T')[0]
+
+      localIdCounter.current -= 1
+      const tempId = localIdCounter.current
+
+      const newRecord = { id: tempId, spent, saved, date: today }
+      const newRecords = [newRecord, ...records]
+      setRecords(newRecords)
+
+      cacheRef.current.setData({ records: newRecords })
+      cacheRef.current.addOperation({ type: 'add', payload: { spent, saved } })
+
+      setSpentInput('')
     }
 
-    async function handleDeleteRecord(recordId) {
-      try {
-        await deleteDinnerRecord(recordId)
-        await loadData()
-      } catch (error) {
-        setStatus('error')
-        setStatusMessage(`删除失败: ${error.message}`)
+    function handleDeleteRecord(recordId) {
+      const newRecords = records.filter(r => r.id !== recordId)
+      setRecords(newRecords)
+
+      cacheRef.current.setData({ records: newRecords })
+
+      if (recordId > 0) {
+        cacheRef.current.addOperation({ type: 'delete', payload: { id: recordId } })
       }
     }
 

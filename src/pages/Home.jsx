@@ -7,6 +7,7 @@ function Home() {
     { id: 'dinner', name: '晚饭攒钱', icon: '🍽️ ' },
     { id: 'bonus', name: 'Bonus 积分', icon: '🎁' },
     { id: 'reading', name: '读书记录', icon: '📚' },
+    { id: 'okr', name: '目标OKR', icon: '🎯' },
   ]
 
   return (

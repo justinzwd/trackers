@@ -38,7 +38,7 @@ export default {
           query += ` WHERE DATE(recorded_at) = ?`
           params.push(dateQuery)
         } else {
-          query += ` WHERE DATE(recorded_at) = DATE('now')`
+          query += ` WHERE DATE(recorded_at) = DATE('now', '+8 hours')`
         }
 
         query += ` ORDER BY recorded_at DESC`
@@ -63,7 +63,7 @@ export default {
             DATE(recorded_at) as date,
             SUM(amount) as total
           FROM water_records
-          WHERE DATE(recorded_at) >= DATE('now', '-6 days')
+          WHERE DATE(recorded_at) >= DATE('now', '+8 hours', '-6 days')
           GROUP BY DATE(recorded_at)
           ORDER BY date
         `
@@ -73,7 +73,7 @@ export default {
 
         // 格式化日期并填充缺失的日期
         const history = []
-        const today = new Date()
+        const today = new Date(Date.now() + 8 * 60 * 60 * 1000)
 
         for (let i = 6; i >= 0; i--) {
           const date = new Date(today)
@@ -108,7 +108,7 @@ export default {
           })
         }
 
-        const query = `INSERT INTO water_records (amount) VALUES (?)`
+        const query = `INSERT INTO water_records (amount, recorded_at) VALUES (?, DATETIME('now', '+8 hours'))`
         const result = await env.DB.prepare(query).bind(amount).run()
 
         return Response.json({

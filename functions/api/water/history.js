@@ -7,7 +7,7 @@ export async function onRequestGet(context) {
       DATE(recorded_at) as date,
       SUM(amount) as total
     FROM water_records
-    WHERE DATE(recorded_at) >= DATE('now', '-6 days')
+    WHERE DATE(recorded_at) >= DATE('now', '+8 hours', '-6 days')
     GROUP BY DATE(recorded_at)
     ORDER BY date ASC
   `
@@ -17,7 +17,7 @@ export async function onRequestGet(context) {
 
   // 格式化日期并填充缺失的日期
   const history = []
-  const now = new Date()
+  const now = new Date(Date.now() + 8 * 60 * 60 * 1000)
 
   for (let i = 6; i >= 0; i--) {
     const date = new Date(now)

@@ -14,7 +14,7 @@ export async function onRequestGet(context) {
     query += ` WHERE DATE(recorded_at) = ?`
     params.push(dateQuery)
   } else {
-    query += ` WHERE DATE(recorded_at) = DATE('now')`
+    query += ` WHERE DATE(recorded_at) = DATE('now', '+8 hours')`
   }
 
   query += ` ORDER BY recorded_at DESC`
@@ -22,24 +22,13 @@ export async function onRequestGet(context) {
   const result = await DB.prepare(query).bind(...params).all()
   const results = result.results || []
 
-  // 格式化时间 - 将 UTC 时间转换为中国时间（+8 小时）
   const formatted = results.map(r => {
-    // recorded_at 格式是 "2026-05-09 16:07:55"（UTC 时间）
-    // 需要转换为中国时间（UTC+8）
     const [datePart, timePart] = r.recorded_at.split(' ')
     const [hour, minute] = timePart.split(':')
-
-    // 转换为中国时间（加 8 小时，处理跨天）
-    let chinaHour = parseInt(hour) + 8
-    if (chinaHour >= 24) {
-      chinaHour -= 24
-    }
-
-    const chinaTimeStr = `${String(chinaHour).padStart(2, '0')}:${minute}`
     return {
       id: r.id,
       amount: r.amount,
-      time: chinaTimeStr,
+      time: `${hour}:${minute}`,
     }
   })
 
@@ -55,7 +44,7 @@ export async function onRequestPost(context) {
     return Response.json({ error: 'Invalid amount' }, { status: 400 })
   }
 
-  const query = `INSERT INTO water_records (amount) VALUES (?)`
+  const query = `INSERT INTO water_records (amount, recorded_at) VALUES (?, DATETIME('now', '+8 hours'))`
   const result = await DB.prepare(query).bind(amount).run()
 
   return Response.json({

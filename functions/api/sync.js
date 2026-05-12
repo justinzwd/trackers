@@ -43,7 +43,7 @@ async function executeWaterOp(DB, op) {
   switch (op.type) {
     case 'add': {
       const { amount } = op.payload
-      await DB.prepare(`INSERT INTO water_records (amount) VALUES (?)`).bind(amount).run()
+      await DB.prepare(`INSERT INTO water_records (amount, recorded_at) VALUES (?, DATETIME('now', '+8 hours'))`).bind(amount).run()
       return {}
     }
     case 'delete': {
